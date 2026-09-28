@@ -49,7 +49,7 @@ public:
 // Re-evaluate the stored appearance against the newly equipped item.
     void OnPlayerEquip(Player* player, Item* item, uint8, uint8, bool) override
     {
-        if (!item)
+        if (!item || !TransmogCollect_CanCollect(player))
             return;
 
         sTransmog->CollectAppearance(player, item->GetTemplate(), true);

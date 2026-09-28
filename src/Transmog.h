@@ -169,6 +169,9 @@ public:
 
 #define sTransmog Transmog::instance()
 
+// False for random bots, and for alt bots unless grouped with their account's real player.
+bool TransmogCollect_CanCollect(Player* player);
+
 bool TransmogRules_IsArmorSlot(uint8 slot);
 bool TransmogRules_IsArmorProficiencySpell(uint32 spellId);
 bool TransmogRules_IsAllowed(uint32 entry);

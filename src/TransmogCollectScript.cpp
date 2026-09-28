@@ -9,7 +9,7 @@
 
 // Retail-style collecting: an appearance unlocks when the item reaches your bags or gets
 // disenchanted, and a login scan catches everything already in your bags and bank.
-// Equipping is handled by TransmogPlayerScript.
+// Equipping is handled by TransmogPlayerScript, behind the same bot check.
 namespace
 {
     // The playerbots fork adds WorldSession::IsBot(); stock AzerothCore doesn't have it. Looking for
@@ -28,37 +28,40 @@ namespace
         else
             return false;
     }
+}
 
-    // Random bots have accounts of their own and would fill mod_transmog_plus_appearances with
-    // everything they loot. Alt bots (your own characters played as bots) share your account, so
-    // they collect for you, but only while a real player of that account is grouped with them.
-    bool CanCollect(Player* player)
-    {
-        WorldSession* session = player ? player->GetSession() : nullptr;
-        if (!sTransmog->Enable || !session)
-            return false;
-
-        if (!IsBotSession(session))
-            return true;
-
-        if (!sTransmog->CollectAltBots)
-            return false;
-
-        Group* group = player->GetGroup();
-        if (!group)
-            return false;
-
-        for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
-        {
-            Player* member = itr->GetSource();
-            if (member && member != player && member->GetSession() && !IsBotSession(member->GetSession())
-                && member->GetSession()->GetAccountId() == session->GetAccountId())
-                return true;
-        }
-
+// Random bots have accounts of their own and would fill mod_transmog_plus_appearances with
+// everything they loot or wear. Alt bots (your own characters played as bots) share your account,
+// so they collect for you, but only while a real player of that account is grouped with them.
+bool TransmogCollect_CanCollect(Player* player)
+{
+    WorldSession* session = player ? player->GetSession() : nullptr;
+    if (!sTransmog->Enable || !session)
         return false;
+
+    if (!IsBotSession(session))
+        return true;
+
+    if (!sTransmog->CollectAltBots)
+        return false;
+
+    Group* group = player->GetGroup();
+    if (!group)
+        return false;
+
+    for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
+    {
+        Player* member = itr->GetSource();
+        if (member && member != player && member->GetSession() && !IsBotSession(member->GetSession())
+            && member->GetSession()->GetAccountId() == session->GetAccountId())
+            return true;
     }
 
+    return false;
+}
+
+namespace
+{
     uint32 CollectItem(Player* player, Item* item, CharacterDatabaseTransaction trans)
     {
         return item && sTransmog->CollectAppearance(player, item->GetTemplate(), false, trans) ? 1 : 0;
@@ -108,14 +111,14 @@ public:
 // the character is in the world; the login scan picks that up instead.
     void OnPlayerStoreNewItem(Player* player, Item* item, uint32 /*count*/) override
     {
-        if (sTransmog->CollectOnPickup && item && player->IsInWorld() && CanCollect(player))
+        if (sTransmog->CollectOnPickup && item && player->IsInWorld() && TransmogCollect_CanCollect(player))
             sTransmog->CollectAppearance(player, item->GetTemplate(), true);
     }
 
 // Existing items changing hands: trade, mail (including the auction house), guild bank.
     void OnPlayerAfterMoveItemToInventory(Player* player, Item* item, bool /*update*/) override
     {
-        if (sTransmog->CollectOnPickup && item && player->IsInWorld() && CanCollect(player))
+        if (sTransmog->CollectOnPickup && item && player->IsInWorld() && TransmogCollect_CanCollect(player))
             sTransmog->CollectAppearance(player, item->GetTemplate(), true);
     }
 
@@ -125,14 +128,14 @@ public:
         if (!sTransmog->CollectOnDisenchant || !spell || !spell->GetSpellInfo()->HasEffect(SPELL_EFFECT_DISENCHANT))
             return;
 
-        if (Item* item = spell->m_targets.GetItemTarget(); item && CanCollect(player))
+        if (Item* item = spell->m_targets.GetItemTarget(); item && TransmogCollect_CanCollect(player))
             sTransmog->CollectAppearance(player, item->GetTemplate(), true);
     }
 
 // Unlock everything already equipped, in the bags or in the bank, and report it in one line.
     void OnPlayerLogin(Player* player) override
     {
-        if (!sTransmog->CollectScanOnLogin || !CanCollect(player))
+        if (!sTransmog->CollectScanOnLogin || !TransmogCollect_CanCollect(player))
             return;
 
         CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
