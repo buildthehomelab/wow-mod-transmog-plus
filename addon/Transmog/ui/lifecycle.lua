@@ -14,7 +14,7 @@ function Transmog_OnLoad()
     Transmog:cacheItem(51217)
 
     TransmogFrameInstructions:SetText("Are you tired of wearing the same armor every day?\nSelect the item you wish to change and enjoy your new stylish look.")
-    TransmogFrameNoTransmogs:SetText("You have yet to uncover any kind of appearance for this item. \nThe appearance will unlock after you equip the item.")
+    TransmogFrameNoTransmogs:SetText("You have yet to uncover any kind of appearance for this item. \nAppearances unlock when you loot, buy, craft or equip an item.")
 
     if not transmogOutfits then
         transmogOutfits = {}
@@ -59,7 +59,9 @@ function Transmog:LoadOnce()
 
 	twfdebug("LoadOnce")
     self:aSend("GetTransmogStatus")
-	self:aSend("GetAvailableTransmogs")
+	self:aSend("GetAvailableTransmogs:grouped")
+	self:aSend("GetOutfits")
+	self:aSend("GetIllusions")
 end
 
 -- Sets up the transmog frame UI, model controls, and initial state when shown.
@@ -121,6 +123,9 @@ function Transmog_OnHide()
     GossipFrame:Hide()
 	twfdebug("Transmog_OnHide")
     Transmog.openedAnywhere = nil
+    for slot, enchant in pairs(Transmog.illusionStatusFromServer) do
+        Transmog.illusionStatusToServer[slot] = enchant
+    end
 
     PlaySound("igCharacterInfoClose");
     Transmog.currentTransmogSlotName = nil
@@ -137,8 +142,10 @@ function Transmog:Reset(once)
 	twfdebug("Reset")
 
     if not once then
+        self.sourcesByItem = {}
         self:aSend("GetTransmogStatus")
-        self:aSend("GetAvailableTransmogs")
+        self:aSend("GetAvailableTransmogs:grouped")
+        self:aSend("GetIllusions")
     end
 
     local race = self.race or "human"

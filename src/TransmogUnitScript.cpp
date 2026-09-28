@@ -13,7 +13,22 @@ public:
 // Limit patch tracking to player visible-item fields to avoid unrelated updates.
     bool ShouldTrackValuesUpdatePosByIndex(Unit const* unit, uint8, uint16 index) override
     {
-        return unit->IsPlayer() && index >= PLAYER_VISIBLE_ITEM_1_ENTRYID && index <= PLAYER_VISIBLE_ITEM_19_ENTRYID && (index & 1);
+        return unit->IsPlayer() && (IsEntryField(index) || IllusionSlotOfField(index) != EQUIPMENT_SLOT_END);
+    }
+
+    static bool IsEntryField(uint16 index)
+    {
+        return index >= PLAYER_VISIBLE_ITEM_1_ENTRYID && index <= PLAYER_VISIBLE_ITEM_19_ENTRYID && (index & 1);
+    }
+
+    // Weapon enchant fields, so illusions survive the core writing enchants directly
+    // (Player::ApplyEnchantment sets the visible enchant without SetVisibleItemSlot).
+    static uint8 IllusionSlotOfField(uint16 index)
+    {
+        for (uint8 slot : { EQUIPMENT_SLOT_MAINHAND, EQUIPMENT_SLOT_OFFHAND })
+            if (index == PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + slot * 2)
+                return slot;
+        return EQUIPMENT_SLOT_END;
     }
 
 // Replace visible-item data in the outgoing update while preserving the packet shape.
@@ -32,8 +47,23 @@ public:
                 continue;
 
             uint16 index = pair.first;
+
+            if (uint8 weaponSlot = IllusionSlotOfField(index); weaponSlot != EQUIPMENT_SLOT_END)
+            {
+                Item const* weapon = player->GetItemByPos(INVENTORY_SLOT_BAG_0, weaponSlot);
+                uint32 perm = weapon ? weapon->GetEnchantmentId(PERM_ENCHANTMENT_SLOT) : 0;
+                uint32 temp = weapon ? weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) : 0;
+                if (sTransmog->Enable)
+                {
+                    perm = sTransmog->GetVisiblePermEnchantForSlot(player, weaponSlot, weapon);
+                    temp = sTransmog->GetVisibleTempEnchantForSlot(player, weaponSlot, weapon);
+                }
+                valuesUpdateBuf.put(pair.second, uint32((perm & 0xFFFF) | (temp << 16)));
+                continue;
+            }
+
             // Transmog display data is patched through the odd visible-item update fields.
-            if (index < PLAYER_VISIBLE_ITEM_1_ENTRYID || index > PLAYER_VISIBLE_ITEM_19_ENTRYID || !(index & 1))
+            if (!IsEntryField(index))
                 continue;
 
             uint8 slot = (index - PLAYER_VISIBLE_ITEM_1_ENTRYID) / 2;

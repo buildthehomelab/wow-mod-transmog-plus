@@ -126,6 +126,11 @@ function Apply_OnClick()
             pending = pending + 1
         end
     end
+    for slot, enchant in pairs(Transmog.illusionStatusToServer) do
+        if (Transmog.illusionStatusFromServer[slot] or 0) ~= enchant then
+            pending = pending + 1
+        end
+    end
     Transmog.pendingApplyCount = pending
 
     TransmogFrameApplyButton:Disable()
@@ -137,6 +142,12 @@ function Apply_OnClick()
             else
                 Transmog:aSend("Remove:" .. (InventorySlotId - 1))
             end
+        end
+    end
+
+    for slot, enchant in pairs(Transmog.illusionStatusToServer) do
+        if (Transmog.illusionStatusFromServer[slot] or 0) ~= enchant then
+            Transmog:aSend("ApplyIllusion:" .. (slot - 1) .. ":" .. enchant)
         end
     end
 end

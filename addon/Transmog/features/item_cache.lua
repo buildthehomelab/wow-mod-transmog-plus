@@ -27,7 +27,7 @@ end
 -- Pre-caches all items referenced in saved outfits.
 function Transmog:CacheOutfitsItems()
     for _, data in pairs(transmogOutfits) do
-        for _, itemId in data do
+        for _, itemId in pairs(data) do
             self:cacheItem(itemId)
         end
     end

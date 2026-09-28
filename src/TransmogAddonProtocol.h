@@ -13,6 +13,9 @@ namespace TransmogAddon
     // Notify tooltip clients that an appearance became collected.
     void SendCollectionUpdated(Player* player, uint32 itemId);
 
+    // Notify the addon that an illusion (weapon enchant visual) became collected.
+    void SendIllusionCollected(Player* player, uint32 enchantId);
+
     void Dispatch(Player* player, std::string const& message);
 }
 

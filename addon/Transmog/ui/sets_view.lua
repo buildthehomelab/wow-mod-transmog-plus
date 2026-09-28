@@ -307,8 +307,9 @@ function Transmog:SaveSetAsOutfit(set)
         outfit[p.slot] = p.id
     end
 
-    local outfitName = set.name
+    local outfitName = Transmog:CleanOutfitName(set.name)
     transmogOutfits[outfitName] = outfit
+    Transmog:PushOutfit(outfitName)
 
     UIDropDownMenu_SetText(TransmogFrameOutfits, outfitName)
     Transmog.currentOutfit = outfitName

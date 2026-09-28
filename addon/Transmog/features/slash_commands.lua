@@ -1,15 +1,25 @@
 local Transmog = _G.Transmog
 
--- /transmog opens the transmog window anywhere (if the realm allows it).
--- /transmog anchor shows the new-appearance alert anchor window.
+-- Key Bindings > Transmog > Open/close Transmog (Bindings.xml).
+BINDING_HEADER_TRANSMOG = "Transmog"
+BINDING_NAME_TRANSMOG_TOGGLE = "Open/close Transmog"
+
+-- Opens the transmog window anywhere (if the realm allows it), or closes it.
+function Transmog_Toggle()
+    if TransmogFrame:IsVisible() then
+        TransmogFrame:Hide()
+    else
+        SendAddonMessage(Transmog.prefix, "RequestPortable", "WHISPER", UnitName("player"))
+    end
+end
+
+-- /transmog toggles the window; /transmog anchor shows the new-appearance alert anchor window.
 SLASH_TRANSMOG1 = "/transmog"
 SlashCmdList["TRANSMOG"] = function(cmd)
     if cmd and strlower(strtrim(cmd)) == "anchor" then
         Transmog.newTransmogAlert:ShowAnchor()
-    elseif TransmogFrame:IsVisible() then
-        TransmogFrame:Hide()
     else
-        SendAddonMessage(Transmog.prefix, "RequestPortable", "WHISPER", UnitName("player"))
+        Transmog_Toggle()
     end
 end
 

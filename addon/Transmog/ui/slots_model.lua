@@ -67,7 +67,11 @@ function Transmog:RefreshPreviewModel()
             effective = self.equippedItems[InventorySlotId]
         end
         if effective and effective ~= 0 and effective ~= Transmog.HIDDEN_ITEM_ID then
-            TransmogFramePlayerModel:TryOn(effective)
+            if self:IsIllusionSlot(InventorySlotId) then
+                TransmogFramePlayerModel:TryOn("item:" .. effective .. ":" .. self:EnchantShownForSlot(InventorySlotId) .. ":0:0:0:0:0:0:0")
+            else
+                TransmogFramePlayerModel:TryOn(effective)
+            end
         end
     end
 end
@@ -75,6 +79,11 @@ end
 -- Previews a transmog appearance on the selected equipment slot.
 function Transmog_Try(itemId, slotName, newReset)
 	twfdebug("Transmog_Try itemID: " .. itemId .. "slotName: " .. slotName)
+
+    if Transmog.tab == 'illusions' and not newReset then
+        Transmog:TryIllusion(itemId)
+        return true
+    end
 
     if newReset and getglobal(slotName .. "NoEquip"):IsVisible() then
         return false
@@ -201,6 +210,22 @@ end
 -- Selects a gear slot and displays available transmog options for it.
 function selectTransmogSlot(InventorySlotId, slotName)
 
+    -- Weapon slots stay on the Illusions tab; any other slot goes back to Items.
+    if Transmog.tab == 'illusions' and InventorySlotId ~= -1 then
+        if Transmog:IsIllusionSlot(InventorySlotId) and not getglobal(slotName .. "NoEquip"):IsVisible() then
+            Transmog.currentTransmogSlot = InventorySlotId
+            Transmog.currentTransmogSlotName = slotName
+            Transmog:ShowIllusionsView()
+            return true
+        end
+
+        Transmog.tab = 'items'
+        Transmog:LeaveIllusionsView()
+        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        TransmogFrameItemsButtonText:SetText(HIGHLIGHT_FONT_COLOR_CODE .. 'Items')
+    end
+
     if Transmog.tab == 'sets' and InventorySlotId ~= -1 then
         Transmog.tab = 'items'
         TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
@@ -289,6 +314,13 @@ function Transmog_ChangePage(dir)
 
         Transmog.currentPage = nextPage
         Transmog:renderAvailableTransmogs(Transmog.currentTransmogSlot, Transmog.currentTransmogItemClass)
+    elseif Transmog.tab == 'illusions' then
+        local nextPage = math.max(1, math.min(Transmog.currentPage + dir, math.max(1, Transmog.totalPages or 1)))
+        if nextPage ~= Transmog.currentPage then
+            PlaySound("igAbiliityPageTurn")
+        end
+        Transmog.currentPage = nextPage
+        Transmog:RenderIllusions()
     else
         Transmog_switchTab(Transmog.tab)
     end
@@ -298,6 +330,9 @@ end
 function Transmog_revert()
     for InventorySlotId, itemID in pairs(Transmog.transmogStatusFromServer) do
         Transmog.transmogStatusToServer[InventorySlotId] = itemID
+    end
+    for slot, enchant in pairs(Transmog.illusionStatusFromServer) do
+        Transmog.illusionStatusToServer[slot] = enchant
     end
     Transmog:HidePlayerItemsAnimation()
 
@@ -311,6 +346,9 @@ function Transmog_switchTab(to)
 	twfdebug("Transmog_switchTab " .. to)
 
     Transmog.tab = to
+    if to ~= 'illusions' then
+        Transmog:LeaveIllusionsView()
+    end
     if to == 'items' then
         TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
         TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
@@ -356,5 +394,29 @@ function Transmog_switchTab(to)
         if Transmog.ShowSetsView then
             Transmog:ShowSetsView()
         end
+    elseif to == 'illusions' then
+        if not Transmog.serverSupportsIllusions then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff4444[Transmog]|r Illusions aren't available on this realm yet.")
+            Transmog_switchTab('items')
+            return
+        end
+
+        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
+        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        TransmogFrameItemsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Items')
+
+        if TransmogFrameSetsButton then
+            TransmogFrameSetsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
+            TransmogFrameSetsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+            TransmogFrameSetsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Sets')
+        end
+        Transmog:SetIllusionsTabActive(true)
+
+        if TransmogSetsFrame then
+            TransmogSetsFrame:Hide()
+        end
+
+        TransmogFrameCollected:Show()
+        Transmog:ShowIllusionsView()
     end
 end

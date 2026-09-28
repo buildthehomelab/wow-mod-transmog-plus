@@ -1,0 +1,5 @@
+<Bindings>
+    <Binding name="TRANSMOG_TOGGLE" header="TRANSMOG">
+        Transmog_Toggle()
+    </Binding>
+</Bindings>

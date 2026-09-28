@@ -43,6 +43,8 @@ Transmog.inventorySlotNames = {
 
 -- Must stay in sync with HIDDEN_ITEM_ID in mod-transmog-plus/src/Transmog.h.
 Transmog.HIDDEN_ITEM_ID = 999999
+-- Must stay in sync with HIDDEN_ILLUSION_ID: an illusion that hides the weapon's enchant glow.
+Transmog.HIDDEN_ILLUSION_ID = 999999
 
 -- Slots that can be hidden. Mirrors server-side TransmogRules_IsArmorSlot().
 Transmog.hideableSlots = {

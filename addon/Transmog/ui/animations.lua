@@ -48,7 +48,9 @@ end
 function Transmog:UpdateSlotGlow(slotName, slotId)
     local serverItem = self.transmogStatusFromServer[slotId]
     local localItem = self.transmogStatusToServer[slotId]
-    if serverItem ~= nil and localItem ~= nil and serverItem ~= localItem then
+    local illusionPending = self:IsIllusionSlot(slotId) and
+        (self.illusionStatusFromServer[slotId] or 0) ~= (self.illusionStatusToServer[slotId] or 0)
+    if (serverItem ~= nil and localItem ~= nil and serverItem ~= localItem) or illusionPending then
         self:ShowSlotGlow(slotName)
     else
         self:HideSlotGlow(slotName)

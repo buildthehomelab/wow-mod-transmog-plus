@@ -44,6 +44,7 @@ public:
     void OnPlayerDelete(ObjectGuid guid, uint32) override
     {
         CharacterDatabase.Execute("DELETE FROM mod_transmog_plus WHERE Owner = {}", guid.GetCounter());
+        CharacterDatabase.Execute("DELETE FROM mod_transmog_plus_illusion_slots WHERE Owner = {}", guid.GetCounter());
     }
 
 // Re-evaluate the stored appearance against the newly equipped item.
@@ -53,6 +54,7 @@ public:
             return;
 
         sTransmog->CollectAppearance(player, item->GetTemplate(), true);
+        sTransmog->CollectIllusionsFromItem(player, item, true);
     }
 
 // Clear the visible override while the equipment slot is empty.

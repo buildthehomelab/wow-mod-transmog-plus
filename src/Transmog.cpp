@@ -222,3 +222,69 @@ std::vector<ItemTemplate const*> Transmog::GetValidAppearances(Player* player, I
 
     return result;
 }
+
+std::vector<std::vector<ItemTemplate const*>> Transmog::GetValidAppearanceGroups(Player* player, ItemTemplate const* targetTemplate, uint8 slot)
+{
+    std::vector<std::vector<ItemTemplate const*>> groups;
+    std::unordered_map<uint32, size_t> groupByDisplay;
+
+    // GetValidAppearances is sorted best quality first, so each group's first source is its best.
+    for (ItemTemplate const* proto : GetValidAppearances(player, targetTemplate))
+    {
+        // Items without a model can't share a look; give each its own group.
+        uint32 key = proto->DisplayInfoID ? proto->DisplayInfoID : 0x80000000u | proto->ItemId;
+        auto [it, inserted] = groupByDisplay.try_emplace(key, groups.size());
+        if (inserted)
+            groups.emplace_back();
+        groups[it->second].push_back(proto);
+    }
+
+    // The addon highlights the tile whose lead source is the slot's current appearance.
+    uint32 current = sTransmog->GetSlotAppearance(player->GetGUID(), slot);
+    if (current)
+        for (auto& group : groups)
+            for (size_t i = 1; i < group.size(); ++i)
+                if (group[i]->ItemId == current)
+                    std::rotate(group.begin(), group.begin() + i, group.begin() + i + 1);
+
+    return groups;
+}
+
+TransmogApplyResult Transmog::ApplyIllusion(Player* player, uint8 slot, uint32 enchantId)
+{
+    if (!IllusionsEnable || !player || !IsIllusionSlot(slot))
+        return TransmogApplyResult::InvalidSlot;
+
+    Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+    if (!item)
+        return TransmogApplyResult::EmptySlot;
+
+    if (!CanHaveIllusion(item))
+        return TransmogApplyResult::InvalidAppearance;
+
+    if (GetSlotIllusion(player->GetGUID(), slot) == enchantId)
+        return TransmogApplyResult::AlreadyApplied;
+
+    bool const free = enchantId == 0 || enchantId == HIDDEN_ILLUSION_ID;
+    if (!free)
+    {
+        if (!IsIllusionEnchant(enchantId))
+            return TransmogApplyResult::InvalidAppearance;
+
+        std::shared_lock<std::shared_mutex> lock(collectionMutex);
+        auto it = illusionCache.find(player->GetSession()->GetAccountId());
+        if (it == illusionCache.end() || !it->second.contains(enchantId))
+            return TransmogApplyResult::InvalidAppearance;
+    }
+
+    uint32 cost = free ? 0 : PriceCopper;
+    if (cost > 0 && !player->HasEnoughMoney(cost))
+        return TransmogApplyResult::NotEnoughMoney;
+
+    if (cost > 0)
+        player->ModifyMoney(-static_cast<int32>(cost), false);
+
+    SetSlotIllusion(player, slot, enchantId);
+    RefreshSlot(player, slot);
+    return TransmogApplyResult::Success;
+}

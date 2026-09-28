@@ -11,8 +11,10 @@ public:
     void OnStartup() override
     {
         sTransmog->LoadConfig();
+        sTransmog->BuildAppearanceIndex();
 
         CharacterDatabase.Execute("DELETE FROM mod_transmog_plus WHERE NOT EXISTS (SELECT 1 FROM characters WHERE characters.guid = mod_transmog_plus.Owner)");
+        CharacterDatabase.Execute("DELETE FROM mod_transmog_plus_illusion_slots WHERE NOT EXISTS (SELECT 1 FROM characters WHERE characters.guid = mod_transmog_plus_illusion_slots.Owner)");
     }
 };
 

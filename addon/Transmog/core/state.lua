@@ -20,6 +20,22 @@ Transmog.equippedTransmogs = {}
 
 Transmog.localCache = {}
 
+-- Looks per slot and item class: each entry lists the collected items sharing one model.
+Transmog.appearanceGroups = {}
+-- Every item sharing a look, collected or not, fetched on hover (see GetSources).
+Transmog.sourcesByItem = {}
+
+-- Set once the server answers the newer requests, so an older server module never leaves the
+-- addon waiting (sources, outfits) or stuck with an Apply it will never confirm (illusions).
+Transmog.serverSupportsExtended = false
+Transmog.serverSupportsIllusions = false
+
+-- Illusions (weapon enchant visuals), keyed by 1-based slot like the item status tables.
+Transmog.illusionIds = {}
+Transmog.illusionNames = {}
+Transmog.illusionStatusFromServer = { [16] = 0, [17] = 0 }
+Transmog.illusionStatusToServer = { [16] = 0, [17] = 0 }
+
 -- Sets tab state
 Transmog.collectedItems = {}
 Transmog.selectedSet = nil

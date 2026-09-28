@@ -189,4 +189,17 @@ Transmog.Collect.AltBots = 1
 
 Transmog.OpenAnywhere = 1
 
+#
+#    ILLUSIONS
+#
+#    Transmog.Illusions.Enable
+#        Description: Collect weapon enchant visuals (illusions) and show a chosen one on the main
+#                     hand or off hand weapon. An illusion unlocks for the account when you enchant
+#                     a weapon, or have an enchanted weapon equipped, in your bags or in the bank.
+#                     Applying one costs Transmog.PriceCopper; removing or hiding the glow is free.
+#        Default:     1
+#
+
+Transmog.Illusions.Enable = 1
+
 ###################################################################################################

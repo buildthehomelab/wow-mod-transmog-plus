@@ -23,6 +23,10 @@
 
 // Reserved entry used to hide an armor-slot appearance without an item template.
 constexpr uint32 HIDDEN_ITEM_ID = 999999;
+// Illusion sentinel that hides a weapon's enchant glow.
+constexpr uint32 HIDDEN_ILLUSION_ID = 999999;
+// Account outfits are capped so one account can't grow the table without bound.
+constexpr uint32 MAX_OUTFITS_PER_ACCOUNT = 50;
 // Maximum appearance entries shown in one gossip page.
 constexpr uint8 MAX_ITEMS_PER_PAGE = 20;
 
@@ -68,7 +72,8 @@ enum TransmogString : uint32
     LANG_TRANSMOG_FREE,
     LANG_TRANSMOG_EMPTY_SLOT,
     LANG_TRANSMOG_SCAN_ADDED,
-    LANG_TRANSMOG_OPEN_ANYWHERE_DISABLED
+    LANG_TRANSMOG_OPEN_ANYWHERE_DISABLED,
+    LANG_TRANSMOG_ILLUSION_ADDED
 };
 
 inline std::string const& Tstr(WorldSession* session, uint32 id)
@@ -121,9 +126,20 @@ public:
     // Let /transmog open the transmog window away from a transmogrifier NPC.
     bool OpenAnywhere;
 
+    // Weapon enchant visuals collected from enchanting and shown through transmog.
+    bool IllusionsEnable;
+
     // Account appearance data is shared while logged-in characters reference it.
     std::unordered_map<uint32, std::unordered_set<uint32>> collectionCache;
     std::unordered_map<uint32, uint32> collectionRefCounts;
+    // Looks (item DisplayInfoID) the account has from any source, and its collected illusions.
+    // Both live and die with collectionCache, under collectionMutex.
+    std::unordered_map<uint32, std::unordered_set<uint32>> displayCache;
+    std::unordered_map<uint32, std::unordered_set<uint32>> illusionCache;
+    // Every transmogrifiable item per DisplayInfoID, built once at startup; read-only afterwards.
+    std::unordered_map<uint32, std::vector<uint32>> displaySources;
+    // Illusion per weapon slot (main hand, off hand), under slotMapMutex.
+    std::unordered_map<ObjectGuid, std::array<uint32, 2>> illusionMap;
     // Slot state is protected separately because it changes during equipment hooks.
     std::unordered_map<ObjectGuid, std::array<uint32, EQUIPMENT_SLOT_END>> slotMap;
     std::unordered_map<ObjectGuid, uint8> selectionCache;
@@ -137,6 +153,26 @@ public:
     // Unlock path shared by every trigger. Returns true when the appearance is new to the account.
     // A transaction batches the insert (login scan); announcing also notifies the addon.
     bool CollectAppearance(Player* player, ItemTemplate const* proto, bool announce, CharacterDatabaseTransaction trans = nullptr);
+    // True when the account has this look from this or any other item.
+    bool IsAppearanceKnown(uint32 accountId, ItemTemplate const* proto) const;
+    void BuildAppearanceIndex();
+    std::vector<uint32> const* GetDisplaySources(uint32 displayId) const;
+
+    // Illusions: collected per account, applied per weapon slot.
+    static bool IsIllusionEnchant(uint32 enchantId);
+    static bool IsIllusionSlot(uint8 slot);
+    static bool CanHaveIllusion(Item const* item);
+    bool CollectIllusion(Player* player, uint32 enchantId, bool announce, CharacterDatabaseTransaction trans = nullptr);
+    // Collects the permanent and temporary enchant visuals on a weapon.
+    uint32 CollectIllusionsFromItem(Player* player, Item const* item, bool announce, CharacterDatabaseTransaction trans = nullptr);
+    uint32 GetSlotIllusion(ObjectGuid guid, uint8 slot) const;
+    void SetSlotIllusion(Player* player, uint8 slot, uint32 enchantId);
+    TransmogApplyResult ApplyIllusion(Player* player, uint8 slot, uint32 enchantId);
+    // The permanent-enchant half of the visible enchant field, with any illusion applied.
+    uint16 GetVisiblePermEnchantForSlot(Player const* player, uint8 slot, Item const* item) const;
+    // The temporary-enchant half; only "hide enchant" changes it.
+    uint16 GetVisibleTempEnchantForSlot(Player const* player, uint8 slot, Item const* item) const;
+
     uint32 GetAppearanceCost(uint32 fakeEntry) const;
     // Gossip and addon adapters use one server-side mutation path.
     TransmogApplyResult ApplyAppearance(Player* player, uint8 slot, uint32 fakeEntry);
@@ -165,6 +201,9 @@ public:
 
     // Gossip and addon list responses share the same filtered appearance set.
     static std::vector<ItemTemplate const*> GetValidAppearances(Player* player, ItemTemplate const* targetTemplate);
+    // The same set grouped by look (DisplayInfoID). Each group keeps every collected source; the
+    // slot's current appearance, if present, leads its group.
+    static std::vector<std::vector<ItemTemplate const*>> GetValidAppearanceGroups(Player* player, ItemTemplate const* targetTemplate, uint8 slot);
 };
 
 #define sTransmog Transmog::instance()

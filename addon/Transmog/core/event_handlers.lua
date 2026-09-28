@@ -83,6 +83,10 @@ Transmog:SetScript("OnEvent", function()
 				twfdebug("CHAT_MSG_ADDON " .. arg2)
 				local message = arg2
 
+				if Transmog:HandleExtendedMessage(message) then
+					return
+				end
+
 				if TransmogFrame_Find(message, "Portable", 1, true) then
 					-- Server allowed /transmog to open the UI away from an NPC.
 					if Transmog.delayedLoad:IsVisible() then
@@ -121,17 +125,32 @@ Transmog:SetScript("OnEvent", function()
 							Transmog.transmogDataFromServer[slot] = {}
 						end
 						Transmog.transmogDataFromServer[slot][itemClass] = {}
+						if not Transmog.appearanceGroups[slot] then
+							Transmog.appearanceGroups[slot] = {}
+						end
+						Transmog.appearanceGroups[slot][itemClass] = {}
 					elseif TransmogFrame_Find(ex[5], "end", 1, true) then
 						Transmog:prepareAvailableTransmogs(slot, itemClass)
 					else
-						for i, itemID in ipairs(ex) do
+						-- Each token is one look: "lead,source,..."; "+source,..." continues the
+						-- previous look. An older server sends one item per token.
+						-- transmogDataFromServer keeps every source flat, for outfits and sets.
+						local groups = Transmog.appearanceGroups[slot][itemClass]
+						for i, token in ipairs(ex) do
 							if i > 4 then
-								itemID = TransmogFrame_ToNumber(itemID)
-								if itemID ~= 0 then
-									Transmog:cacheItem(itemID)
-
-									table.insert(Transmog.transmogDataFromServer[slot][itemClass], itemID)
-									Transmog.collectedItems[itemID] = true
+								local continues = string.sub(token, 1, 1) == "+"
+								local group = continues and groups[table.getn(groups)] or {}
+								for id in string.gmatch(token, "(%d+)") do
+									local itemID = TransmogFrame_ToNumber(id)
+									if itemID ~= 0 then
+										table.insert(group, itemID)
+										table.insert(Transmog.transmogDataFromServer[slot][itemClass], itemID)
+										Transmog.collectedItems[itemID] = true
+									end
+								end
+								if not continues and table.getn(group) > 0 then
+									Transmog:cacheItem(group[1])
+									table.insert(groups, group)
 								end
 							end
 						end

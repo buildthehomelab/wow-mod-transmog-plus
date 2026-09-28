@@ -36,6 +36,14 @@ function Transmog:calculateCost(to)
         end
     end
 
+    -- Staged illusions go along as "i<slot>:<enchant>"; the server prices them.
+    for slot, enchant in pairs(self.illusionStatusToServer) do
+        if (self.illusionStatusFromServer[slot] or 0) ~= enchant then
+            transmogs = transmogs + 1
+            slots = slots .. "i" .. (slot - 1) .. ":" .. enchant .. ","
+        end
+    end
+
     if to == 0 then
         transmogs = 0
         resets = 0

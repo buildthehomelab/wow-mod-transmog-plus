@@ -50,8 +50,10 @@ function Transmog:prepareAvailableTransmogs(slot, itemClass)
 
     self.availableTransmogItems[slot][itemClass] = {}
 
-    for i, itemID in ipairs(self.transmogDataFromServer[slot][itemClass]) do
-        itemID = TransmogFrame_ToNumber(itemID)
+    -- One tile per look; its lead item is what gets applied, the rest are extra sources.
+    local groups = self.appearanceGroups[slot] and self.appearanceGroups[slot][itemClass] or {}
+    for i, group in ipairs(groups) do
+        local itemID = group[1]
         local name, link, quality, level, min_level, class, subclass, _, inv_type, tex = GetItemInfo(itemID)
 
 		local eqItemLink = nil
@@ -85,7 +87,8 @@ function Transmog:prepareAvailableTransmogs(slot, itemClass)
                 ['t2'] = subclass,
                 ['equip_slot'] = inv_type,
                 ['tex'] = tex,
-                ['itemLink'] = eqItemLink
+                ['itemLink'] = eqItemLink,
+                ['sources'] = group
             })
         end
     end
@@ -121,7 +124,8 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
     self:hideItems(true)
     self:hideItemBorders()
 
-	self:setProgressBar(self:tableSize(self.transmogDataFromServer[slot][itemClass]), self.numTransmogs[slot][itemClass])
+	local looks = self.appearanceGroups[slot] and self.appearanceGroups[slot][itemClass]
+	self:setProgressBar(self:tableSize(looks), self.numTransmogs[slot][itemClass])
     if self:tableSize(self.transmogDataFromServer[slot][itemClass]) == 0 then
         TransmogFrameNoTransmogs:Show()
     end
@@ -154,8 +158,7 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
                 getglobal('TransmogLook' .. itemIndex .. 'Button'):SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_normal')
             end
 
-            local _, _, _, color = GetItemQualityColor(item.quality)
-            AddButtonOnEnterTextTooltip(getglobal('TransmogLook' .. itemIndex .. 'Button'), color .. item.name)
+            self:SetLookTooltip(getglobal('TransmogLook' .. itemIndex .. 'Button'), item)
             if item.reset then
                 getglobal('TransmogLook' .. itemIndex .. 'ButtonRevert'):Show()
             end
@@ -406,4 +409,90 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
         getglobal(self.currentTransmogSlotName .. 'BorderSelected'):Show()
     end
 
+end
+
+-- Tile tooltips list every item with the tile's look: collected ones first as they arrive with
+-- the list, then the full set (collected or not) once the server answers GetSources.
+local function sourceLine(itemID, collected)
+    local name, _, quality = GetItemInfo(itemID)
+    if not name then
+        Transmog:cacheItem(itemID)
+        name = "Item #" .. itemID
+        quality = 1
+    end
+    if collected then
+        local _, _, _, color = GetItemQualityColor(quality or 1)
+        return "|cff20ff20+|r " .. color .. name .. "|r"
+    end
+    return "|cff808080- " .. name .. "|r"
+end
+
+function Transmog:ShowLookTooltip(owner, item)
+    FashionTooltip:SetOwner(owner, "ANCHOR_RIGHT", -(owner:GetWidth() / 4) + 15, -(owner:GetHeight() / 4) + 20)
+    local _, _, _, color = GetItemQualityColor(item.quality or 1)
+    FashionTooltip:AddLine(color .. item.name)
+
+    if item.id ~= self.HIDDEN_ITEM_ID then
+        FashionTooltip:AddLine("Sources:", 1, 0.82, 0)
+        local sources = self.sourcesByItem[item.id]
+        -- An empty answer (item unknown to the server's look index) keeps the collected list.
+        if sources and not sources.loading and table.getn(sources.list) > 0 then
+            for _, source in ipairs(sources.list) do
+                FashionTooltip:AddLine(sourceLine(source.id, source.collected))
+            end
+        else
+            for _, id in ipairs(item.sources or { item.id }) do
+                FashionTooltip:AddLine(sourceLine(id, true))
+            end
+            if sources and sources.loading then
+                FashionTooltip:AddLine("|cff808080Loading all sources...|r")
+            end
+        end
+    end
+
+    FashionTooltip:Show()
+end
+
+function Transmog:SetLookTooltip(button, item)
+    button:SetScript("OnEnter", function()
+        Transmog.lookTooltipOwner = this
+        Transmog.lookTooltipItem = item
+        if Transmog.serverSupportsExtended and item.id ~= Transmog.HIDDEN_ITEM_ID and not Transmog.sourcesByItem[item.id] then
+            Transmog.sourcesByItem[item.id] = { loading = true, list = {} }
+            Transmog:aSend("GetSources:" .. item.id)
+        end
+        Transmog:ShowLookTooltip(this, item)
+    end)
+    button:SetScript("OnLeave", function()
+        Transmog.lookTooltipOwner = nil
+        FashionTooltip:Hide()
+    end)
+end
+
+-- "Sources:<item>:start", "Sources:<item>:<id>,<0|1>:...", "Sources:<item>:end".
+function Transmog:OnSources(itemID, rest)
+    if not itemID or not rest then
+        return
+    end
+
+    local entry = self.sourcesByItem[itemID]
+    if not entry then
+        entry = { loading = true, list = {} }
+        self.sourcesByItem[itemID] = entry
+    end
+
+    if rest == "start" then
+        entry.list = {}
+        entry.loading = true
+    elseif rest == "end" then
+        entry.loading = false
+        if self.lookTooltipOwner and self.lookTooltipItem and self.lookTooltipItem.id == itemID then
+            self:ShowLookTooltip(self.lookTooltipOwner, self.lookTooltipItem)
+        end
+    else
+        for id, collected in string.gmatch(rest, "(%d+),(%d)") do
+            table.insert(entry.list, { id = tonumber(id), collected = collected == "1" })
+            self:cacheItem(tonumber(id))
+        end
+    end
 end

@@ -157,6 +157,110 @@ function Transmog_LoadOutfit(self, outfit)
     Transmog:calculateCost()
 end
 
+-- Outfits live on the server, account-wide. transmogOutfits mirrors the server copy once it has
+-- answered, so the dropdown keeps working against an older server that never answers.
+
+-- Encodes an outfit as "slot,item;slot,item" for the server.
+function Transmog:EncodeOutfit(data)
+    local parts = {}
+    for slot, itemID in pairs(data) do
+        table.insert(parts, slot .. "," .. itemID)
+    end
+    return table.concat(parts, ";")
+end
+
+function Transmog:DecodeOutfit(text)
+    local data = {}
+    for slot, itemID in string.gmatch(text or "", "(%d+),(%d+)") do
+        data[tonumber(slot)] = tonumber(itemID)
+    end
+    return data
+end
+
+-- Sends one outfit to the server (no-op until the server has answered GetOutfits).
+function Transmog:PushOutfit(name)
+    if self.outfitsFromServer and transmogOutfits[name] then
+        SendAddonMessage(self.prefix, "SaveOutfit:" .. self:EncodeOutfit(transmogOutfits[name]) .. ":" .. name, "WHISPER", UnitName("player"))
+    end
+end
+
+function Transmog:DeleteOutfitOnServer(name)
+    if self.outfitsFromServer then
+        SendAddonMessage(self.prefix, "DeleteOutfit:" .. name, "WHISPER", UnitName("player"))
+    end
+end
+
+function Transmog:OnOutfitsStart()
+    self.incomingOutfits = {}
+end
+
+function Transmog:OnOutfit(data, name)
+    if self.incomingOutfits and name and name ~= "" then
+        self.incomingOutfits[name] = self:DecodeOutfit(data)
+    end
+end
+
+-- The first sync of a character uploads its old per-character outfits; after that the server
+-- copy wins, so an outfit deleted on one character stays deleted on the others.
+function Transmog:OnOutfitsEnd()
+    local serverOutfits = self.incomingOutfits or {}
+    self.incomingOutfits = nil
+    self.outfitsFromServer = true
+
+    if not transmogOutfitsSynced then
+        for oldName, data in pairs(transmogOutfits or {}) do
+            -- Old names may break the server's rules; clean them, and keep both outfits when a
+            -- cleaned name collides with a different one already on the account.
+            local name = self:CleanOutfitName(oldName)
+            if name == "" then
+                name = "Outfit"
+            end
+            local base, n = name, 2
+            while serverOutfits[name] and self:EncodeOutfit(serverOutfits[name]) ~= self:EncodeOutfit(data) do
+                name = self:CleanOutfitName(base .. " " .. n)
+                n = n + 1
+            end
+            if not serverOutfits[name] then
+                serverOutfits[name] = data
+                SendAddonMessage(self.prefix, "SaveOutfit:" .. self:EncodeOutfit(data) .. ":" .. name, "WHISPER", UnitName("player"))
+            end
+        end
+        transmogOutfitsSynced = true
+    end
+
+    transmogOutfits = serverOutfits
+    self:CacheOutfitsItems()
+    UIDropDownMenu_Initialize(TransmogFrameOutfits, OutfitsDropDown_Initialize)
+end
+
+-- The server refused an outfit (the account is at its outfit limit): drop it from the mirror.
+function Transmog:OnOutfitRejected(name)
+    DEFAULT_CHAT_FRAME:AddMessage("|cffff4444[Transmog]|r Outfit '" .. name .. "' was not saved: your account has too many outfits. Delete one and save it again.")
+    if transmogOutfits[name] then
+        transmogOutfits[name] = nil
+        if self.currentOutfit == name then
+            self.currentOutfit = nil
+            UIDropDownMenu_SetText(TransmogFrameOutfits, "Outfits")
+        end
+        UIDropDownMenu_Initialize(TransmogFrameOutfits, OutfitsDropDown_Initialize)
+    end
+end
+
+-- Outfit names travel inside addon messages: no escape codes or control characters, and at
+-- most 48 bytes, cut on a UTF-8 character boundary.
+function Transmog:CleanOutfitName(name)
+    name = string.gsub(name or "", "[%c|]", "")
+    name = strtrim(name)
+    local out = ""
+    for char in string.gmatch(name, "[%z\1-\127\194-\244][\128-\191]*") do
+        if string.len(out) + string.len(char) > 48 then
+            break
+        end
+        out = out .. char
+    end
+    return out
+end
+
 -- Saves the current transmog selections as a saved outfit.
 function Transmog_SaveOutfit()
 	transmogOutfits[Transmog.currentOutfit] = {}
@@ -171,6 +275,7 @@ function Transmog_SaveOutfit()
         end
     end
     TransmogFrameSaveOutfit:Disable()
+    Transmog:PushOutfit(Transmog.currentOutfit)
 end
 
 -- Enables the save outfit button when an outfit is currently selected.
@@ -188,6 +293,7 @@ function Transmog_deleteOutfit()
 
     local outfitName = Transmog.currentOutfit
     transmogOutfits[outfitName] = nil
+    Transmog:DeleteOutfitOnServer(outfitName)
     Transmog.currentOutfit = nil
     TransmogFrameSaveOutfit:Disable()
     TransmogFrameDeleteOutfit:Disable()
@@ -203,7 +309,7 @@ StaticPopupDialogs["TRANSMOG_NEW_OUTFIT"] = {
     button2 = "Cancel",
     hasEditBox = 1,
     OnAccept = function()
-        local outfitName = getglobal(this:GetParent():GetName() .. "EditBox"):GetText()
+        local outfitName = Transmog:CleanOutfitName(getglobal(this:GetParent():GetName() .. "EditBox"):GetText())
         if outfitName == '' then
             StaticPopup_Show('TRANSMOG_OUTFIT_EMPTY_NAME')
             return

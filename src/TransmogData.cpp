@@ -23,8 +23,22 @@ void Transmog::LoadPlayerSlots(ObjectGuid guid)
         } while (result->NextRow());
     }
 
+    std::array<uint32, 2> localIllusions{ 0, 0 };
+    result = CharacterDatabase.Query("SELECT Slot, EnchantId FROM mod_transmog_plus_illusion_slots WHERE Owner = {}", guid.GetCounter());
+    if (result)
+    {
+        do
+        {
+            uint8 slot = (*result)[0].Get<uint8>();
+            uint32 enchantId = (*result)[1].Get<uint32>();
+            if (IsIllusionSlot(slot) && (enchantId == HIDDEN_ILLUSION_ID || IsIllusionEnchant(enchantId)))
+                localIllusions[slot - EQUIPMENT_SLOT_MAINHAND] = enchantId;
+        } while (result->NextRow());
+    }
+
     std::unique_lock<std::shared_mutex> lock(slotMapMutex);
     slotMap[guid] = localSlots;
+    illusionMap[guid] = localIllusions;
 }
 
 // Slot state is removed from memory when the player leaves the world.
@@ -32,6 +46,60 @@ void Transmog::UnloadPlayerSlots(ObjectGuid guid)
 {
     std::unique_lock<std::shared_mutex> lock(slotMapMutex);
     slotMap.erase(guid);
+    illusionMap.erase(guid);
+}
+
+uint32 Transmog::GetSlotIllusion(ObjectGuid guid, uint8 slot) const
+{
+    if (!IsIllusionSlot(slot))
+        return 0;
+
+    std::shared_lock<std::shared_mutex> lock(slotMapMutex);
+    auto it = illusionMap.find(guid);
+    return it == illusionMap.end() ? 0 : it->second[slot - EQUIPMENT_SLOT_MAINHAND];
+}
+
+// A zero enchant removes the illusion; HIDDEN_ILLUSION_ID hides the weapon's glow.
+void Transmog::SetSlotIllusion(Player* player, uint8 slot, uint32 enchantId)
+{
+    if (!IsIllusionSlot(slot))
+        return;
+
+    ObjectGuid guid = player->GetGUID();
+    {
+        std::unique_lock<std::shared_mutex> lock(slotMapMutex);
+        illusionMap[guid][slot - EQUIPMENT_SLOT_MAINHAND] = enchantId;
+    }
+
+    if (enchantId == 0)
+        CharacterDatabase.Execute("DELETE FROM mod_transmog_plus_illusion_slots WHERE Owner = {} AND Slot = {}", guid.GetCounter(), slot);
+    else
+        CharacterDatabase.Execute("REPLACE INTO mod_transmog_plus_illusion_slots (Owner, Slot, EnchantId) VALUES ({}, {}, {})", guid.GetCounter(), slot, enchantId);
+}
+
+uint16 Transmog::GetVisiblePermEnchantForSlot(Player const* player, uint8 slot, Item const* item) const
+{
+    if (!item)
+        return 0;
+
+    uint16 real = uint16(item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
+    if (!IllusionsEnable || !CanHaveIllusion(item))
+        return real;
+
+    uint32 illusion = GetSlotIllusion(player->GetGUID(), slot);
+    if (illusion == HIDDEN_ILLUSION_ID)
+        return 0;
+    return illusion ? uint16(illusion) : real;
+}
+
+uint16 Transmog::GetVisibleTempEnchantForSlot(Player const* player, uint8 slot, Item const* item) const
+{
+    if (!item)
+        return 0;
+
+    if (IllusionsEnable && CanHaveIllusion(item) && GetSlotIllusion(player->GetGUID(), slot) == HIDDEN_ILLUSION_ID)
+        return 0;
+    return uint16(item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
 }
 
 // A zero entry removes the override; other entries replace it in storage.
@@ -91,8 +159,8 @@ void Transmog::ApplySlot(Player* player, uint8 slot, Item* item)
     }
     else
     {
-        player->SetUInt16Value(index + 1, 0, item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
-        player->SetUInt16Value(index + 1, 1, item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
+        player->SetUInt16Value(index + 1, 0, GetVisiblePermEnchantForSlot(player, slot, item));
+        player->SetUInt16Value(index + 1, 1, GetVisibleTempEnchantForSlot(player, slot, item));
     }
 }
 
@@ -122,8 +190,11 @@ void Transmog::ClearAllSlots(Player* player)
         auto it = slotMap.find(guid);
         if (it != slotMap.end())
             it->second.fill(0);
+        if (auto ill = illusionMap.find(guid); ill != illusionMap.end())
+            ill->second.fill(0);
     }
     CharacterDatabase.Execute("DELETE FROM mod_transmog_plus WHERE Owner = {}", guid.GetCounter());
+    CharacterDatabase.Execute("DELETE FROM mod_transmog_plus_illusion_slots WHERE Owner = {}", guid.GetCounter());
 }
 
 // Selection is UI state and defaults to the first equipment slot.

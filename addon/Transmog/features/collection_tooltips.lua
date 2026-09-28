@@ -101,14 +101,16 @@ local function handleCollectionStatus(message)
     end
 end
 
--- Newly equipped appearances are reported by the server so stale client results are corrected.
+-- New appearances are reported by the server so stale client results are corrected. A look
+-- counts for every item sharing its model, so forget all cached results, not just this item's.
 local function handleCollectionUpdated(message)
     local itemId = tonumber(string.match(message, "^CollectionUpdated:(%d+)$"))
     if not itemId then
         return
     end
 
-    pendingByItem[itemId] = nil
+    statusByItem = {}
+    pendingByItem = {}
     statusByItem[itemId] = STATUS_COLLECTED
 end
 

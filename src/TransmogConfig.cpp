@@ -51,4 +51,6 @@ void Transmog::LoadConfig()
     CollectAltBots = sConfigMgr->GetOption<bool>("Transmog.Collect.AltBots", true);
 
     OpenAnywhere = sConfigMgr->GetOption<bool>("Transmog.OpenAnywhere", true);
+
+    IllusionsEnable = sConfigMgr->GetOption<bool>("Transmog.Illusions.Enable", true);
 }

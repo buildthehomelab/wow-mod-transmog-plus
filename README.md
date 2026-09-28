@@ -17,9 +17,17 @@ it collects appearances the retail way (see below) and ships a migration from mo
   vendors, quest rewards, crafting, trades, mail, the auction house, the guild bank) or when you
   disenchant it. A scan on login collects everything already equipped, in your bags and in
   your bank. Each trigger can be switched off in the config.
+- One tile per look: items that share a model are grouped, and the tile's tooltip lists every
+  item with that look, collected or not. A look counts as collected from any of its items.
+- Illusions: weapon enchant glows unlock for the account when you enchant a weapon (or own an
+  enchanted one) and can be shown on the main hand or off hand from the Illusions tab, or
+  hidden altogether (`Transmog.Illusions.Enable`).
+- Outfits are saved on the server for the whole account. Each character's old outfits are
+  uploaded the first time it opens the window.
 - Transmog Sets browser in the addon.
-- `/transmog` opens the transmog window anywhere, no NPC needed (switch off with
-  `Transmog.OpenAnywhere = 0`). `/transmog anchor` moves the new-appearance alert.
+- `/transmog`, or a key bound under Key Bindings > Transmog, opens the transmog window
+  anywhere, no NPC needed (switch off with `Transmog.OpenAnywhere = 0`). `/transmog anchor`
+  moves the new-appearance alert.
 - Option to hide individual armor slots (helm, shoulders, chest, etc.).
 
 
