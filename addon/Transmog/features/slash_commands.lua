@@ -1,10 +1,15 @@
 local Transmog = _G.Transmog
 
--- Shows the transmog new-appearance alert anchor window.
+-- /transmog opens the transmog window anywhere (if the realm allows it).
+-- /transmog anchor shows the new-appearance alert anchor window.
 SLASH_TRANSMOG1 = "/transmog"
 SlashCmdList["TRANSMOG"] = function(cmd)
-    if cmd then
+    if cmd and strlower(strtrim(cmd)) == "anchor" then
         Transmog.newTransmogAlert:ShowAnchor()
+    elseif TransmogFrame:IsVisible() then
+        TransmogFrame:Hide()
+    else
+        SendAddonMessage(Transmog.prefix, "RequestPortable", "WHISPER", UnitName("player"))
     end
 end
 

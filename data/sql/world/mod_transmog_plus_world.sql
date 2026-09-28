@@ -45,4 +45,5 @@ INSERT INTO `module_string` (`module`, `id`, `string`) VALUES
 ('mod-transmog-plus', 15, 'This item\'s appearance has been added to your collection.'),
 ('mod-transmog-plus', 16, 'Free'),
 ('mod-transmog-plus', 17, 'Equipment slot is empty.'),
-('mod-transmog-plus', 18, 'appearance(s) from your gear, bags and bank added to your collection.');
+('mod-transmog-plus', 18, 'appearance(s) from your gear, bags and bank added to your collection.'),
+('mod-transmog-plus', 19, 'Visit a transmogrifier to change your appearance.');

@@ -255,6 +255,19 @@ namespace TransmogAddon
         SendCost(player, totalCost);
     }
 
+// /transmog asks to open the window away from an NPC; the server has the final say.
+    void HandleRequestPortable(Player* player, std::string const&)
+    {
+        if (!sTransmog->OpenAnywhere)
+        {
+            ChatHandler(player->GetSession()).SendSysMessage(Tstr(player->GetSession(), LANG_TRANSMOG_OPEN_ANYWHERE_DISABLED));
+            return;
+        }
+
+        sTransmog->ClearSelection(player->GetGUID());
+        SendToClient(player, "Portable");
+    }
+
 // Dispatch only recognized module commands and ignore unrelated chat traffic.
     void Dispatch(Player* player, std::string const& message)
     {
@@ -277,6 +290,8 @@ namespace TransmogAddon
             HandleRemoveAll(player, args);
         else if (command == "CalculateCost")
             HandleCalculateCost(player, args);
+        else if (command == "RequestPortable")
+            HandleRequestPortable(player, args);
     }
 }
 

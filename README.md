@@ -18,6 +18,8 @@ it collects appearances the retail way (see below) and ships a migration from mo
   disenchant it. A scan on login collects everything already equipped, in your bags and in
   your bank. Each trigger can be switched off in the config.
 - Transmog Sets browser in the addon.
+- `/transmog` opens the transmog window anywhere, no NPC needed (switch off with
+  `Transmog.OpenAnywhere = 0`). `/transmog anchor` moves the new-appearance alert.
 - Option to hide individual armor slots (helm, shoulders, chest, etc.).
 
 
@@ -64,12 +66,6 @@ Don't run both. To move over:
 
 All prices, quality restrictions, type rules, and requirement ignores are configurable in
 `mod_transmog_plus.conf`. See the distributed config file for details.
-
-## TODO
-
-- **Collections journal away from the NPC.** Retail lets you browse your appearances and sets
-  anywhere from the Collections window. Add a button (and a slash command) that opens the
-  transmog window in a browse-only mode: previewing works, applying stays at the transmogrifier.
 
 ## Known Limitations
 

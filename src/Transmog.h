@@ -67,7 +67,8 @@ enum TransmogString : uint32
     LANG_TRANSMOG_APPEARANCE_ADDED,
     LANG_TRANSMOG_FREE,
     LANG_TRANSMOG_EMPTY_SLOT,
-    LANG_TRANSMOG_SCAN_ADDED
+    LANG_TRANSMOG_SCAN_ADDED,
+    LANG_TRANSMOG_OPEN_ANYWHERE_DISABLED
 };
 
 inline std::string const& Tstr(WorldSession* session, uint32 id)
@@ -116,6 +117,9 @@ public:
     bool CollectOnDisenchant;
     bool CollectScanOnLogin;
     bool CollectAltBots;
+
+    // Let /transmog open the transmog window away from a transmogrifier NPC.
+    bool OpenAnywhere;
 
     // Account appearance data is shared while logged-in characters reference it.
     std::unordered_map<uint32, std::unordered_set<uint32>> collectionCache;

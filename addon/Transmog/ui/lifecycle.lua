@@ -68,7 +68,7 @@ function TransmogFrame_OnShow()
 	twfdebug("TransmogFrame_OnShow start")
 
     Transmog_switchTab('items')
-    SetPortraitTexture(TransmogFramePortrait, "target");
+    SetPortraitTexture(TransmogFramePortrait, Transmog.openedAnywhere and "player" or "target");
 
     Transmog:Reset()
 
@@ -120,6 +120,7 @@ function Transmog_OnHide()
     HideUIPanel(GossipFrame)
     GossipFrame:Hide()
 	twfdebug("Transmog_OnHide")
+    Transmog.openedAnywhere = nil
 
     PlaySound("igCharacterInfoClose");
     Transmog.currentTransmogSlotName = nil

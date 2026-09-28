@@ -177,4 +177,16 @@ Transmog.Collect.OnDisenchant = 1
 Transmog.Collect.ScanOnLogin = 1
 Transmog.Collect.AltBots = 1
 
+#
+#    ANYWHERE
+#
+#    Transmog.OpenAnywhere
+#        Description: With the addon, /transmog opens the transmog window anywhere, not only at a
+#                     transmogrifier NPC. Set to 0 to make players visit the NPC. This only stops
+#                     /transmog; it doesn't check distance on the addon's apply requests.
+#        Default:     1
+#
+
+Transmog.OpenAnywhere = 1
+
 ###################################################################################################

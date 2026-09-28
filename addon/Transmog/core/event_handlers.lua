@@ -83,6 +83,17 @@ Transmog:SetScript("OnEvent", function()
 				twfdebug("CHAT_MSG_ADDON " .. arg2)
 				local message = arg2
 
+				if TransmogFrame_Find(message, "Portable", 1, true) then
+					-- Server allowed /transmog to open the UI away from an NPC.
+					if Transmog.delayedLoad:IsVisible() then
+						twfprint("Transmog is still loading, try again in a few seconds.")
+					else
+						Transmog.openedAnywhere = true
+						TransmogFrame:Show()
+					end
+					return
+				end
+
 				if TransmogFrame_Find(message, "Open", 1, true) then
 					-- Server requests the transmog UI to open.
 					Transmog.serverRequestsOverlay = true
