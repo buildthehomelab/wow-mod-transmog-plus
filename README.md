@@ -3,11 +3,21 @@
 Slot-based transmogrification module for [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk).
 Appearances are stored per slot (not per item), so your look stays when you swap gear.
 
+This is the buildthehomelab fork. It is based on
+[Saor79's fork](https://github.com/Saor79/mod-transmog-plus) including its
+`feature/transmog-sets` branch (the Transmog Sets browser), which in turn forks
+[Stefan2102/mod-transmog-plus](https://github.com/Stefan2102/mod-transmog-plus). On top of that
+it collects appearances the retail way (see below) and ships a migration from mod-transmog.
+
 ## Features
 
 - Slot-based transmog -- appearances stay on the equipment slot when you swap gear.
 - Account-wide collection -- any appearance unlocked by one character is available account-wide.
-- Appearances unlock when you equip an item.
+- Appearances unlock the retail way: when you equip an item, when it lands in your bags (loot,
+  vendors, quest rewards, crafting, trades, mail, the auction house, the guild bank) or when you
+  disenchant it. A scan on login collects everything already equipped, in your bags and in
+  your bank. Each trigger can be switched off in the config.
+- Transmog Sets browser in the addon.
 - Option to hide individual armor slots (helm, shoulders, chest, etc.).
 
 
@@ -21,7 +31,12 @@ gossip menu is used as a fallback.
 
 ## Installation
 
-1. Place the module under the `modules/` folder of your AzerothCore source directory.
+1. Clone the module into the `modules/` folder of your AzerothCore source directory. Keep the
+   folder name `mod-transmog-plus`, because AzerothCore derives the loader function name from it:
+
+   ```bash
+   git clone https://github.com/buildthehomelab/wow-mod-transmog-plus.git mod-transmog-plus
+   ```
 2. Re-run CMake and build.
 3. Copy `conf/mod_transmog_plus.conf.dist` to `mod_transmog_plus.conf` and adjust as needed.
 4. Import the SQL files manually, or let AzerothCore auto-import them on next server start.
@@ -30,10 +45,31 @@ gossip menu is used as a fallback.
 Addon installation (optional): copy the `addon/Transmog/` folder to your client's
 `Interface/AddOns/` directory.
 
+## Migrating from mod-transmog
+
+mod-transmog-plus replaces [azerothcore/mod-transmog](https://github.com/azerothcore/mod-transmog).
+Don't run both. To move over:
+
+1. Remove mod-transmog (and mod-transmog-collect, whose features are built in here) from
+   `modules/`, add this module and rebuild.
+2. Start the worldserver once so the mod-transmog-plus tables get created, then stop it.
+3. Run [`sql/migrate_from_mod_transmog.sql`](sql/migrate_from_mod_transmog.sql) against the
+   characters database. It copies every account's collection and the transmogs on equipped
+   items. Transmogs on items in bags or the bank and mod-transmog's saved sets don't carry over;
+   the file explains why. It leaves the old tables in place and is safe to run twice.
+4. Start the worldserver. mod-transmog's NPC (entry 190010) no longer does anything; spawn this
+   module's NPC (190012) wherever the old one stood.
+
 ## Configuration
 
 All prices, quality restrictions, type rules, and requirement ignores are configurable in
 `mod_transmog_plus.conf`. See the distributed config file for details.
+
+## TODO
+
+- **Collections journal away from the NPC.** Retail lets you browse your appearances and sets
+  anywhere from the Collections window. Add a button (and a slash command) that opens the
+  transmog window in a browse-only mode: previewing works, applying stays at the transmogrifier.
 
 ## Known Limitations
 
@@ -48,6 +84,8 @@ All prices, quality restrictions, type rules, and requirement ignores are config
 
 - [flekz-games](https://github.com/flekz-games) for [cmangos-transmog](https://github.com/flekz-games/cmangos-transmog)
 - [malinmr](https://github.com/malinmr) for porting the addon to AzerothCore
+- [Stefan2102](https://github.com/Stefan2102) for mod-transmog-plus
+- [Saor79](https://github.com/Saor79) for the Transmog Sets browser
 
 ## License
 

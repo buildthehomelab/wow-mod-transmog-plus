@@ -143,4 +143,38 @@ Transmog.IgnoreReqSpell = 0
 Transmog.IgnoreReqEvent = 0
 Transmog.IgnoreReqStats = 0
 
+#
+#    COLLECTING
+#
+#    Equipping an item always adds its appearance to the account's collection. These settings add
+#    the retail ways of collecting on top of that.
+#
+#    Transmog.Collect.OnPickup
+#        Description: Collect a weapon or armor appearance as soon as the item lands in your bags,
+#                     bound or not: loot, vendors, quest rewards, crafting, trades, mail (so also
+#                     the auction house) and the guild bank.
+#        Default:     1
+#
+#    Transmog.Collect.OnDisenchant
+#        Description: Collect the appearance of an item when you disenchant it. With OnPickup on,
+#                     this only matters for items you had before the module was installed.
+#        Default:     1
+#
+#    Transmog.Collect.ScanOnLogin
+#        Description: On every login, collect the appearances of everything equipped, in your bags
+#                     and in your bank, and report how many were new in one chat line.
+#        Default:     1
+#
+#    Transmog.Collect.AltBots
+#        Description: Playerbots only. Let your own characters played as bots collect for your
+#                     account while you're grouped with them. Random bots never collect through
+#                     the settings above, so their accounts don't fill the collection table.
+#        Default:     1
+#
+
+Transmog.Collect.OnPickup = 1
+Transmog.Collect.OnDisenchant = 1
+Transmog.Collect.ScanOnLogin = 1
+Transmog.Collect.AltBots = 1
+
 ###################################################################################################

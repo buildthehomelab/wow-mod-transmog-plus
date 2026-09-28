@@ -44,4 +44,9 @@ void Transmog::LoadConfig()
     IgnoreReqSpell = sConfigMgr->GetOption<bool>("Transmog.IgnoreReqSpell", false);
     IgnoreReqEvent = sConfigMgr->GetOption<bool>("Transmog.IgnoreReqEvent", false);
     IgnoreReqStats = sConfigMgr->GetOption<bool>("Transmog.IgnoreReqStats", false);
+
+    CollectOnPickup = sConfigMgr->GetOption<bool>("Transmog.Collect.OnPickup", true);
+    CollectOnDisenchant = sConfigMgr->GetOption<bool>("Transmog.Collect.OnDisenchant", true);
+    CollectScanOnLogin = sConfigMgr->GetOption<bool>("Transmog.Collect.ScanOnLogin", true);
+    CollectAltBots = sConfigMgr->GetOption<bool>("Transmog.Collect.AltBots", true);
 }

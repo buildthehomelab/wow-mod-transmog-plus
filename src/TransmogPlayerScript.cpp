@@ -52,24 +52,7 @@ public:
         if (!item)
             return;
 
-        ItemTemplate const* itemTemplate = item->GetTemplate();
-        if (itemTemplate->Class != ITEM_CLASS_ARMOR && itemTemplate->Class != ITEM_CLASS_WEAPON)
-            return;
-
-        if (TransmogRules_CanNeverTransmog(itemTemplate))
-            return;
-
-        uint32 accountId = player->GetSession()->GetAccountId();
-        uint32 itemId = itemTemplate->ItemId;
-
-        sTransmog->LoadCollectionForAccount(accountId);
-
-        if (sTransmog->AddCollectedAppearance(accountId, itemId))
-        {
-            CharacterDatabase.Execute("INSERT INTO mod_transmog_plus_appearances (account_id, item_template_id) VALUES ({}, {})", accountId, itemId);
-            TransmogAddon::SendCollectionUpdated(player, itemId);
-            ChatHandler(player->GetSession()).PSendSysMessage("{} {}", Transmog::GetItemLink(itemId, player->GetSession()), Tstr(player->GetSession(), LANG_TRANSMOG_APPEARANCE_ADDED));
-        }
+        sTransmog->CollectAppearance(player, item->GetTemplate(), true);
     }
 
 // Clear the visible override while the equipment slot is empty.

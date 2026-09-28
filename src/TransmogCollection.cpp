@@ -1,4 +1,6 @@
 #include "Transmog.h"
+#include "TransmogAddonProtocol.h"
+#include "Chat.h"
 
 // Keep one shared collection cache per account while logged-in players reference it.
 // Load one account cache and reuse it for all characters from that account.
@@ -54,4 +56,39 @@ bool Transmog::AddCollectedAppearance(uint32 accountId, uint32 itemId)
 
     auto result = accountIt->second.insert(itemId);
     return result.second;
+}
+
+// Every unlock trigger (equip, pickup, disenchant, login scan) goes through here.
+bool Transmog::CollectAppearance(Player* player, ItemTemplate const* proto, bool announce, CharacterDatabaseTransaction trans)
+{
+    if (!player || !proto)
+        return false;
+
+    if (proto->Class != ITEM_CLASS_ARMOR && proto->Class != ITEM_CLASS_WEAPON)
+        return false;
+
+    if (TransmogRules_CanNeverTransmog(proto))
+        return false;
+
+    WorldSession* session = player->GetSession();
+    uint32 accountId = session->GetAccountId();
+    uint32 itemId = proto->ItemId;
+
+    LoadCollectionForAccount(accountId);
+
+    if (!AddCollectedAppearance(accountId, itemId))
+        return false;
+
+    if (trans)
+        trans->Append("INSERT IGNORE INTO mod_transmog_plus_appearances (account_id, item_template_id) VALUES ({}, {})", accountId, itemId);
+    else
+        CharacterDatabase.Execute("INSERT IGNORE INTO mod_transmog_plus_appearances (account_id, item_template_id) VALUES ({}, {})", accountId, itemId);
+
+    if (announce)
+    {
+        TransmogAddon::SendCollectionUpdated(player, itemId);
+        ChatHandler(session).PSendSysMessage("{} {}", GetItemLink(itemId, session), Tstr(session, LANG_TRANSMOG_APPEARANCE_ADDED));
+    }
+
+    return true;
 }

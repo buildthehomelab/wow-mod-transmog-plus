@@ -66,7 +66,8 @@ enum TransmogString : uint32
     LANG_TRANSMOG_NO_APPEARANCES,
     LANG_TRANSMOG_APPEARANCE_ADDED,
     LANG_TRANSMOG_FREE,
-    LANG_TRANSMOG_EMPTY_SLOT
+    LANG_TRANSMOG_EMPTY_SLOT,
+    LANG_TRANSMOG_SCAN_ADDED
 };
 
 inline std::string const& Tstr(WorldSession* session, uint32 id)
@@ -110,6 +111,12 @@ public:
     bool IgnoreReqEvent;
     bool IgnoreReqStats;
 
+    // Extra ways to unlock an appearance besides equipping the item.
+    bool CollectOnPickup;
+    bool CollectOnDisenchant;
+    bool CollectScanOnLogin;
+    bool CollectAltBots;
+
     // Account appearance data is shared while logged-in characters reference it.
     std::unordered_map<uint32, std::unordered_set<uint32>> collectionCache;
     std::unordered_map<uint32, uint32> collectionRefCounts;
@@ -123,6 +130,9 @@ public:
     void LoadCollectionForAccount(uint32 accountId);
     void UnrefCollectionForAccount(uint32 accountId);
     bool AddCollectedAppearance(uint32 accountId, uint32 itemId);
+    // Unlock path shared by every trigger. Returns true when the appearance is new to the account.
+    // A transaction batches the insert (login scan); announcing also notifies the addon.
+    bool CollectAppearance(Player* player, ItemTemplate const* proto, bool announce, CharacterDatabaseTransaction trans = nullptr);
     uint32 GetAppearanceCost(uint32 fakeEntry) const;
     // Gossip and addon adapters use one server-side mutation path.
     TransmogApplyResult ApplyAppearance(Player* player, uint8 slot, uint32 fakeEntry);

@@ -4,6 +4,7 @@ void AddSC_TransmogUnitScript();
 void AddSC_TransmogWorldScript();
 void AddSC_TransmogGlobalScript();
 void AddSC_TransmogAddonProtocol();
+void AddSC_TransmogCollectScript();
 
 void Addmod_transmog_plusScripts()
 {
@@ -13,4 +14,5 @@ void Addmod_transmog_plusScripts()
     AddSC_TransmogWorldScript();
     AddSC_TransmogGlobalScript();
     AddSC_TransmogAddonProtocol();
+    AddSC_TransmogCollectScript();
 }
