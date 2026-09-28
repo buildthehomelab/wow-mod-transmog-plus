@@ -121,6 +121,7 @@ public:
     bool CollectOnPickup;
     bool CollectOnDisenchant;
     bool CollectScanOnLogin;
+    bool CollectQuestRewards;
     bool CollectAltBots;
 
     // Let /transmog open the transmog window away from a transmogrifier NPC.

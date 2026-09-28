@@ -15,8 +15,10 @@ it collects appearances the retail way (see below) and ships a migration from mo
 - Account-wide collection -- any appearance unlocked by one character is available account-wide.
 - Appearances unlock the retail way: when you equip an item, when it lands in your bags (loot,
   vendors, quest rewards, crafting, trades, mail, the auction house, the guild bank) or when you
-  disenchant it. A scan on login collects everything already equipped, in your bags and in
-  your bank. Each trigger can be switched off in the config.
+  disenchant it. Turning in a quest collects every reward it offers, not only the one you
+  picked. A scan on login collects everything already equipped, in your bags and in your bank,
+  and the rewards of every quest already turned in. Each trigger can be switched off in the
+  config.
 - One tile per look: items that share a model are grouped, and the tile's tooltip lists every
   item with that look, collected or not. A look counts as collected from any of its items.
 - Illusions: weapon enchant glows unlock for the account when you enchant a weapon (or own an

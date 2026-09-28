@@ -165,6 +165,13 @@ Transmog.IgnoreReqStats = 0
 #                     and in your bank, and report how many were new in one chat line.
 #        Default:     1
 #
+#    Transmog.Collect.QuestRewards
+#        Description: Turning in a quest collects every item it offers: all the reward choices, not
+#                     only the one you picked, plus the fixed rewards. On login this also collects
+#                     the rewards of every quest the character has already turned in, so quests
+#                     done before this was on (or before the module was installed) count too.
+#        Default:     1
+#
 #    Transmog.Collect.AltBots
 #        Description: Playerbots only. Let your own characters played as bots collect for your
 #                     account while you're grouped with them. Random bots never collect through
@@ -175,6 +182,7 @@ Transmog.IgnoreReqStats = 0
 Transmog.Collect.OnPickup = 1
 Transmog.Collect.OnDisenchant = 1
 Transmog.Collect.ScanOnLogin = 1
+Transmog.Collect.QuestRewards = 1
 Transmog.Collect.AltBots = 1
 
 #
