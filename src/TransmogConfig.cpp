@@ -48,6 +48,7 @@ void Transmog::LoadConfig()
     CollectOnPickup = sConfigMgr->GetOption<bool>("Transmog.Collect.OnPickup", true);
     CollectOnDisenchant = sConfigMgr->GetOption<bool>("Transmog.Collect.OnDisenchant", true);
     CollectScanOnLogin = sConfigMgr->GetOption<bool>("Transmog.Collect.ScanOnLogin", true);
+    CollectQuestRewards = sConfigMgr->GetOption<bool>("Transmog.Collect.QuestRewards", true);
     CollectAltBots = sConfigMgr->GetOption<bool>("Transmog.Collect.AltBots", true);
 
     OpenAnywhere = sConfigMgr->GetOption<bool>("Transmog.OpenAnywhere", true);

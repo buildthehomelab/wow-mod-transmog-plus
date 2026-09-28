@@ -2,6 +2,8 @@
 #include "Bag.h"
 #include "Chat.h"
 #include "Group.h"
+#include "ObjectMgr.h"
+#include "QuestDef.h"
 #include "Spell.h"
 #include "SpellInfo.h"
 #include <atomic>
@@ -12,7 +14,8 @@
 #include <vector>
 
 // Retail-style collecting: an appearance unlocks when the item reaches your bags or gets
-// disenchanted, and a login scan catches everything already in your bags and bank.
+// disenchanted, and a login scan catches everything already in your bags and bank. Turning in a
+// quest unlocks every item it offers, not only the reward you picked.
 // Equipping is handled by TransmogPlayerScript, behind the same bot check.
 namespace
 {
@@ -106,6 +109,33 @@ namespace
             CollectBag(player, bagPos, trans, counts);
 
         return counts;
+    }
+
+    // Every item a quest offers: all the choices and the fixed rewards.
+    uint32 CollectQuestItems(Player* player, Quest const* quest, bool announce, CharacterDatabaseTransaction trans = nullptr)
+    {
+        uint32 added = 0;
+
+        for (uint8 i = 0; i < QUEST_REWARD_CHOICES_COUNT; ++i)
+            if (uint32 itemId = quest->RewardChoiceItemId[i])
+                added += sTransmog->CollectAppearance(player, sObjectMgr->GetItemTemplate(itemId), announce, trans) ? 1 : 0;
+
+        for (uint8 i = 0; i < QUEST_REWARDS_COUNT; ++i)
+            if (uint32 itemId = quest->RewardItemId[i])
+                added += sTransmog->CollectAppearance(player, sObjectMgr->GetItemTemplate(itemId), announce, trans) ? 1 : 0;
+
+        return added;
+    }
+
+    // Backfill for quests turned in before this was on (or before the module was installed).
+    // Cheap enough to run on every login: already-known items stop at the in-memory cache.
+    uint32 CollectRewardedQuests(Player* player, CharacterDatabaseTransaction trans)
+    {
+        uint32 added = 0;
+        for (uint32 questId : player->getRewardedQuests())
+            if (Quest const* quest = sObjectMgr->GetQuestTemplate(questId))
+                added += CollectQuestItems(player, quest, false, trans);
+        return added;
     }
 
     // The spell-cast hook fires before the cast's last checks, and trade-window enchants only
@@ -205,6 +235,7 @@ public:
         PLAYERHOOK_ON_STORE_NEW_ITEM,
         PLAYERHOOK_ON_AFTER_MOVE_ITEM_TO_INVENTORY,
         PLAYERHOOK_ON_SPELL_CAST,
+        PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST,
         PLAYERHOOK_ON_LOGIN,
         PLAYERHOOK_ON_LOGOUT,
         PLAYERHOOK_ON_UPDATE
@@ -257,14 +288,26 @@ public:
             sTransmog->CollectAppearance(player, item->GetTemplate(), true);
     }
 
-// Unlock everything already equipped, in the bags or in the bank, and report it in one line.
+// Fires at the end of the turn-in, after the picked reward is already in the bags.
+    void OnPlayerCompleteQuest(Player* player, Quest const* quest) override
+    {
+        if (sTransmog->CollectQuestRewards && quest && TransmogCollect_CanCollect(player))
+            CollectQuestItems(player, quest, true);
+    }
+
+// Unlock everything already equipped, in the bags or in the bank, plus the rewards of every quest
+// already turned in, and report it in one line.
     void OnPlayerLogin(Player* player) override
     {
-        if (!sTransmog->CollectScanOnLogin || !TransmogCollect_CanCollect(player))
+        if ((!sTransmog->CollectScanOnLogin && !sTransmog->CollectQuestRewards) || !TransmogCollect_CanCollect(player))
             return;
 
         CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
-        ScanCounts counts = CollectEverything(player, trans);
+        ScanCounts counts;
+        if (sTransmog->CollectScanOnLogin)
+            counts = CollectEverything(player, trans);
+        if (sTransmog->CollectQuestRewards)
+            counts.appearances += CollectRewardedQuests(player, trans);
         if (!counts.appearances && !counts.illusions)
             return;
 
