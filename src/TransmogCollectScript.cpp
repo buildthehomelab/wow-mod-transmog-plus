@@ -2,9 +2,12 @@
 #include "Bag.h"
 #include "Chat.h"
 #include "Group.h"
+#include "Opcodes.h"
 #include "ObjectMgr.h"
 #include "QuestDef.h"
 #include "Spell.h"
+#include "WorldPacket.h"
+#include "WorldSession.h"
 #include "SpellInfo.h"
 #include <atomic>
 #include <mutex>
@@ -14,7 +17,7 @@
 #include <vector>
 
 // Retail-style collecting: an appearance unlocks when the item reaches your bags or gets
-// disenchanted, and a login scan catches everything already in your bags and bank. Turning in a
+// disenchanted (by hand or by winning a Disenchant roll), and a login scan catches everything already in your bags and bank. Turning in a
 // quest unlocks every item it offers, not only the reward you picked.
 // Equipping is handled by TransmogPlayerScript, behind the same bot check.
 namespace
@@ -317,7 +320,42 @@ public:
     }
 };
 
+// Winning a Disenchant roll turns the item straight into materials: it never reaches the bags
+// and no spell is cast, so neither hook above sees it, and the core has no script hook there.
+// The roll result packet goes to the winner just before the materials do, so read it instead.
+class TransmogDisenchantRollScript : public ServerScript
+{
+public:
+    TransmogDisenchantRollScript() : ServerScript("TransmogDisenchantRollScript", { SERVERHOOK_CAN_PACKET_SEND }) { }
+
+    bool CanPacketSend(WorldSession* session, WorldPacket const& packet) override
+    {
+        if (packet.GetOpcode() != SMSG_LOOT_ROLL_WON || !sTransmog->CollectOnDisenchant || !session)
+            return true;
+
+        Player* player = session->GetPlayer();
+        if (!player || !player->IsInWorld())
+            return true;
+
+        // guid source, uint32 slot, uint32 itemId, uint32 suffix, uint32 propertyId, guid winner,
+        // uint8 rollNumber, uint8 rollType. Read from a copy so the packet itself stays untouched.
+        WorldPacket data(packet);
+        ObjectGuid source, winner;
+        uint32 slot, itemId, suffix, propertyId;
+        uint8 rollNumber, rollType;
+        data >> source >> slot >> itemId >> suffix >> propertyId >> winner >> rollNumber >> rollType;
+
+        // Everyone who rolled gets this packet; only the winner's copy counts.
+        if (rollType != DISENCHANT || winner != player->GetGUID() || !TransmogCollect_CanCollect(player))
+            return true;
+
+        sTransmog->CollectAppearance(player, sObjectMgr->GetItemTemplate(itemId), true);
+        return true;
+    }
+};
+
 void AddSC_TransmogCollectScript()
 {
     new TransmogCollectScript();
+    new TransmogDisenchantRollScript();
 }
