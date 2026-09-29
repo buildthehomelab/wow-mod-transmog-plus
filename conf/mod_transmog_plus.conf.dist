@@ -156,8 +156,9 @@ Transmog.IgnoreReqStats = 0
 #        Default:     1
 #
 #    Transmog.Collect.OnDisenchant
-#        Description: Collect the appearance of an item when you disenchant it. With OnPickup on,
-#                     this only matters for items you had before the module was installed.
+#        Description: Collect the appearance of an item when you disenchant it, and of an item
+#                     you win with a Disenchant roll in a group (that item never reaches your
+#                     bags, so OnPickup can't catch it).
 #        Default:     1
 #
 #    Transmog.Collect.ScanOnLogin
