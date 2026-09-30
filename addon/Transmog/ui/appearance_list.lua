@@ -123,10 +123,20 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
 
     self:hideItems(true)
     self:hideItemBorders()
+    TransmogFrameFilters:Show()
+    TransmogFrameNoTransmogs:Hide()
 
 	local looks = self.appearanceGroups[slot] and self.appearanceGroups[slot][itemClass]
 	self:setProgressBar(self:tableSize(looks), self.numTransmogs[slot][itemClass])
-    if self:tableSize(self.transmogDataFromServer[slot][itemClass]) == 0 then
+
+    local shown, emptyText = self:GetShownLooks(slot, itemClass)
+    local missing = self.showMissing and self.missingLooks
+    if missing and not missing.loading and not missing.unsupported then
+        local count = table.getn(missing.ids)
+        TransmogFrameCollectedCollectedStatus:SetText("Missing: " .. (count < missing.total and (count .. " of " .. missing.total) or count))
+    end
+    if emptyText then
+        TransmogFrameNoTransmogs:SetText(emptyText)
         TransmogFrameNoTransmogs:Show()
     end
 
@@ -134,8 +144,9 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
     local row = 0
     local col = 0
     local itemIndex = 1
+    local uncached = false
 
-    for _, item in ipairs(self.availableTransmogItems[slot][itemClass]) do
+    for _, item in ipairs(shown) do
 
         if index >= (self.currentPage - 1) * self.ipp and index < self.currentPage * self.ipp then
 
@@ -162,6 +173,7 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
             if item.reset then
                 getglobal('TransmogLook' .. itemIndex .. 'ButtonRevert'):Show()
             end
+            self:SetMissingShade(itemIndex, item.missing)
 
             self.ItemButtons[itemIndex]:Show()
 
@@ -368,6 +380,11 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
             end
 
             if item.id ~= Transmog.HIDDEN_ITEM_ID then
+                -- Missing looks usually aren't in the client cache yet, and TryOn needs them there.
+                if item.missing and not GetItemInfo(item.id) then
+                    self:cacheItem(item.id)
+                    uncached = true
+                end
                 model:TryOn(item.id);
             end
 
@@ -383,7 +400,7 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
         index = index + 1
     end
 
-    self.totalPages = self:ceil(self:tableSize(self.availableTransmogItems[slot][itemClass]) / self.ipp)
+    self.totalPages = math.max(1, self:ceil(table.getn(shown) / self.ipp))
 
     TransmogFramePageText:SetText("Page " .. self.currentPage .. "/" .. self.totalPages)
 
@@ -393,7 +410,7 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
         TransmogFrameLeftArrow:Enable()
     end
 
-    if self.currentPage == self.totalPages or self:tableSize(self.availableTransmogItems[slot][itemClass]) < self.ipp then
+    if self.currentPage >= self.totalPages then
         TransmogFrameRightArrow:Disable()
     else
         TransmogFrameRightArrow:Enable()
@@ -407,6 +424,10 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
 
     if self.currentTransmogSlotName then
         getglobal(self.currentTransmogSlotName .. 'BorderSelected'):Show()
+    end
+
+    if uncached then
+        self.missingCacheWait:Start()
     end
 
 end
@@ -442,11 +463,15 @@ function Transmog:ShowLookTooltip(owner, item)
             end
         else
             for _, id in ipairs(item.sources or { item.id }) do
-                FashionTooltip:AddLine(sourceLine(id, true))
+                FashionTooltip:AddLine(sourceLine(id, not item.missing))
             end
             if sources and sources.loading then
                 FashionTooltip:AddLine("|cff808080Loading all sources...|r")
             end
+        end
+        if item.missing then
+            FashionTooltip:AddLine("Not collected", 1, 0.27, 0.27)
+            FashionTooltip:AddLine("Click to preview, Shift-click to link", 0.5, 0.5, 0.5)
         end
     end
 

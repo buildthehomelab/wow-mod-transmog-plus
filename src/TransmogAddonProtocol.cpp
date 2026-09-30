@@ -12,6 +12,7 @@
 #include <string>
 #include <string_view>
 #include <algorithm>
+#include <cctype>
 #include <charconv>
 #include <system_error>
 
@@ -23,6 +24,9 @@ namespace TransmogAddon
     constexpr size_t MAX_PAYLOAD = 220;
     // Tooltips list at most this many sources per look.
     constexpr size_t MAX_SOURCES = 40;
+    // Most missing looks sent for one request; a search narrows the rest.
+    constexpr size_t MAX_MISSING = 1200;
+    constexpr size_t MAX_QUERY = 40;
 
     // Reject partial numeric tokens so malformed addon requests cannot be accepted.
     bool ParseUint32(std::string_view text, uint32& value)
@@ -267,6 +271,81 @@ namespace TransmogAddon
                 tokens.push_back(std::to_string(source) + (collected ? ",1" : ",0"));
             }
         }
+
+        SendToClient(player, header + "start");
+        SendTokens(player, header, tokens);
+        SendToClient(player, header + "end");
+    }
+
+    std::string LowerAscii(std::string_view text)
+    {
+        std::string out(text);
+        std::transform(out.begin(), out.end(), out.begin(), [](unsigned char c) { return char(std::tolower(c)); });
+        return out;
+    }
+
+    // Looks the account hasn't collected that the item in this slot could take, one item each:
+    // "MissingLooks:<seq>:<total>:start", "MissingLooks:<seq>:<total>:<id>:<id>...", "...:end".
+    // Args are "<seq>:<slot>[:<query>]"; seq is echoed so the addon can drop stale answers.
+    // A query keeps looks with any usable source whose name contains it. Total counts every
+    // match, even past MAX_MISSING.
+    void HandleGetMissing(Player* player, std::string const& args)
+    {
+        std::vector<std::string_view> parts = Acore::Tokenize(args, ':', true);
+        uint32 seq, slot;
+        if (parts.size() < 2 || !ParseUint32(parts[0], seq) || !ParseUint32(parts[1], slot) || slot >= EQUIPMENT_SLOT_END)
+            return;
+
+        std::string query = parts.size() > 2 ? LowerAscii(parts[2].substr(0, MAX_QUERY)) : std::string();
+
+        Item* targetItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+        ItemTemplate const* targetTemplate = targetItem ? targetItem->GetTemplate() : nullptr;
+
+        std::vector<ItemTemplate const*> missing;
+        if (targetTemplate)
+        {
+            uint32 accountId = player->GetSession()->GetAccountId();
+            sTransmog->LoadCollectionForAccount(accountId);
+
+            std::shared_lock<std::shared_mutex> lock(sTransmog->collectionMutex);
+            auto knownIt = sTransmog->displayCache.find(accountId);
+            for (auto const& [display, sources] : sTransmog->displaySources)
+            {
+                if (knownIt != sTransmog->displayCache.end() && knownIt->second.contains(display))
+                    continue;
+
+                // The tile shows the best-quality usable source, preferring one the search named.
+                ItemTemplate const* lead = nullptr;
+                ItemTemplate const* leadMatch = nullptr;
+                for (uint32 id : sources)
+                {
+                    ItemTemplate const* proto = sObjectMgr->GetItemTemplate(id);
+                    if (!proto || !TransmogRules_CanTransmogrifyItemWithItem(player, targetTemplate, proto))
+                        continue;
+
+                    if (!lead || proto->Quality > lead->Quality)
+                        lead = proto;
+                    if (!query.empty() && LowerAscii(proto->Name1).find(query) != std::string::npos &&
+                        (!leadMatch || proto->Quality > leadMatch->Quality))
+                        leadMatch = proto;
+                }
+
+                if (ItemTemplate const* shown = query.empty() ? lead : leadMatch)
+                    missing.push_back(shown);
+            }
+        }
+
+        std::sort(missing.begin(), missing.end(), [](ItemTemplate const* a, ItemTemplate const* b)
+        {
+            if (a->Quality != b->Quality)
+                return a->Quality > b->Quality;
+            return a->Name1 < b->Name1;
+        });
+
+        std::string header = "MissingLooks:" + std::to_string(seq) + ":" + std::to_string(missing.size()) + ":";
+        std::vector<std::string> tokens;
+        for (size_t i = 0; i < missing.size() && i < MAX_MISSING; ++i)
+            tokens.push_back(std::to_string(missing[i]->ItemId));
 
         SendToClient(player, header + "start");
         SendTokens(player, header, tokens);
@@ -540,6 +619,8 @@ namespace TransmogAddon
             HandleRequestPortable(player, args);
         else if (command == "GetSources")
             HandleGetSources(player, args);
+        else if (command == "GetMissing")
+            HandleGetMissing(player, args);
         else if (command == "GetOutfits")
             HandleGetOutfits(player, args);
         else if (command == "SaveOutfit")

@@ -85,6 +85,16 @@ function Transmog_Try(itemId, slotName, newReset)
         return true
     end
 
+    if not newReset and Transmog.tab == 'items' then
+        if IsModifiedClick("CHATLINK") and Transmog:LinkLook(itemId) then
+            return true
+        end
+        if Transmog.showMissing then
+            Transmog:PreviewMissing(itemId)
+            return true
+        end
+    end
+
     if newReset and getglobal(slotName .. "NoEquip"):IsVisible() then
         return false
     end
@@ -192,6 +202,10 @@ end
 -- Hides all transmog item buttons, optionally using the button's own Hide method.
 function Transmog:hideItems(hideButton)
     for index, button in ipairs(self.ItemButtons) do
+        -- The Illusions tab reuses these tiles; a missing look's shade must not follow.
+        if button.missingShade then
+            button.missingShade:Hide()
+        end
 		if hideButton then
 			button:Hide()
 		else
@@ -256,6 +270,7 @@ function selectTransmogSlot(InventorySlotId, slotName)
         TransmogFrameSplash:Show()
         TransmogFrameInstructions:Show()
         TransmogFrameCollected:Hide()
+        TransmogFrameFilters:Hide()
         Transmog.currentTransmogSlotName = nil
         Transmog.currentTransmogSlot = nil
 		Transmog.currentTransmogItemClass = nil
@@ -386,6 +401,7 @@ function Transmog_switchTab(to)
         Transmog:hideItems(true)
         Transmog:hidePagination()
         TransmogFrameCollected:Hide()
+        TransmogFrameFilters:Hide()
         TransmogFrameNoTransmogs:Hide()
         TransmogFrameSplash:Hide()
         TransmogFrameInstructions:Hide()
@@ -411,6 +427,7 @@ function Transmog_switchTab(to)
             TransmogFrameSetsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Sets')
         end
         Transmog:SetIllusionsTabActive(true)
+        TransmogFrameFilters:Hide()
 
         if TransmogSetsFrame then
             TransmogSetsFrame:Hide()

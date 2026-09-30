@@ -21,6 +21,10 @@ it collects appearances the retail way (see below) and ships a migration from mo
   config.
 - One tile per look: items that share a model are grouped, and the tile's tooltip lists every
   item with that look, collected or not. A look counts as collected from any of its items.
+- Search box under the Items grid filters by item name (any item with the look). Tick
+  **Missing** to list the looks the selected item could use that your account hasn't collected
+  yet. The server builds that list and runs the search on it. Click a missing look to try it
+  on; Shift-click any look to link the item in chat.
 - Illusions: weapon enchant glows unlock for the account when you enchant a weapon (or own an
   enchanted one) and can be shown on the main hand or off hand from the Illusions tab, or
   hidden altogether (`Transmog.Illusions.Enable`).

@@ -29,6 +29,12 @@ function Transmog:HandleExtendedMessage(message)
         return true
     end
 
+    if startsWith(message, "MissingLooks:") then
+        local seq, total, rest = string.match(message, "^MissingLooks:(%d+):(%d+):(.*)$")
+        self:OnMissingLooks(tonumber(seq), tonumber(total), rest)
+        return true
+    end
+
     if startsWith(message, "Sources:") then
         local itemID, rest = string.match(message, "^Sources:(%d+):(.*)$")
         self:OnSources(tonumber(itemID), rest)
