@@ -62,9 +62,10 @@ function Transmog:GetShownLooks(slot, itemClass)
         end
 
         for _, id in ipairs(missing.ids) do
-            local name, link, quality = GetItemInfo(id)
+            local name, link, quality, _, _, _, _, _, invType = GetItemInfo(id)
             table.insert(shown, {
                 ['id'] = id,
+                ['equip_slot'] = invType,
                 ['name'] = name or ("Item #" .. id),
                 ['link'] = link,
                 ['quality'] = quality or 1,
