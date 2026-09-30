@@ -25,6 +25,13 @@ Transmog.appearanceGroups = {}
 -- Every item sharing a look, collected or not, fetched on hover (see GetSources).
 Transmog.sourcesByItem = {}
 
+-- Items tab filters (ui/item_filters.lua). missingLooks holds the server's answer for one
+-- slot, equipped item and search; missingSeq tells a current answer from a stale one.
+Transmog.searchText = ""
+Transmog.showMissing = false
+Transmog.missingLooks = nil
+Transmog.missingSeq = 0
+
 -- Set once the server answers the newer requests, so an older server module never leaves the
 -- addon waiting (sources, outfits) or stuck with an Apply it will never confirm (illusions).
 Transmog.serverSupportsExtended = false

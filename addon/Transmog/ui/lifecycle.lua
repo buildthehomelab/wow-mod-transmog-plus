@@ -14,7 +14,7 @@ function Transmog_OnLoad()
     Transmog:cacheItem(51217)
 
     TransmogFrameInstructions:SetText("Are you tired of wearing the same armor every day?\nSelect the item you wish to change and enjoy your new stylish look.")
-    TransmogFrameNoTransmogs:SetText("You have yet to uncover any kind of appearance for this item. \nAppearances unlock when you loot, buy, craft or equip an item.")
+    TransmogFrameNoTransmogs:SetText(Transmog.NO_TRANSMOGS_TEXT)
 
     if not transmogOutfits then
         transmogOutfits = {}
@@ -130,6 +130,7 @@ function Transmog_OnHide()
     PlaySound("igCharacterInfoClose");
     Transmog.currentTransmogSlotName = nil
     Transmog.currentTransmogSlot = nil
+    Transmog:ResetItemFilters()
     Transmog.currentOutfit = nil
     TransmogFrameSaveOutfit:Disable()
     TransmogFrameDeleteOutfit:Disable()
@@ -143,6 +144,7 @@ function Transmog:Reset(once)
 
     if not once then
         self.sourcesByItem = {}
+        self.missingLooks = nil
         self:aSend("GetTransmogStatus")
         self:aSend("GetAvailableTransmogs:grouped")
         self:aSend("GetIllusions")

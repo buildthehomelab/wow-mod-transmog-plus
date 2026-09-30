@@ -894,6 +894,95 @@
                     </Anchor>
                 </Anchors>
             </StatusBar>
+            <Frame name="$parentFilters" hidden="true">
+                <Size>
+                    <AbsDimension x="445" y="24"/>
+                </Size>
+                <Anchors>
+                    <Anchor point="BOTTOMLEFT">
+                        <Offset>
+                            <AbsDimension x="268" y="16"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Frames>
+                    <EditBox name="$parentSearch" inherits="InputBoxTemplate" autoFocus="false" letters="40">
+                        <Size>
+                            <AbsDimension x="125" y="20"/>
+                        </Size>
+                        <Anchors>
+                            <Anchor point="LEFT">
+                                <Offset>
+                                    <AbsDimension x="6" y="0"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Layers>
+                            <Layer level="ARTWORK">
+                                <FontString name="$parentHint" inherits="GameFontDisableSmall" text="Search">
+                                    <Anchors>
+                                        <Anchor point="LEFT">
+                                            <Offset>
+                                                <AbsDimension x="2" y="0"/>
+                                            </Offset>
+                                        </Anchor>
+                                    </Anchors>
+                                </FontString>
+                            </Layer>
+                        </Layers>
+                        <Scripts>
+                            <OnTextChanged>
+                                TransmogFilters_OnSearchChanged(this)
+                            </OnTextChanged>
+                            <OnEditFocusGained>
+                                TransmogFrameFiltersSearchHint:Hide()
+                            </OnEditFocusGained>
+                            <OnEditFocusLost>
+                                this:HighlightText(0, 0)
+                                if this:GetText() == "" then
+                                    TransmogFrameFiltersSearchHint:Show()
+                                end
+                            </OnEditFocusLost>
+                            <OnEnterPressed>
+                                this:ClearFocus()
+                            </OnEnterPressed>
+                            <OnEscapePressed>
+                                this:SetText("")
+                                this:ClearFocus()
+                            </OnEscapePressed>
+                        </Scripts>
+                    </EditBox>
+                    <CheckButton name="$parentMissing" inherits="UICheckButtonTemplate">
+                        <Size>
+                            <AbsDimension x="24" y="24"/>
+                        </Size>
+                        <Anchors>
+                            <Anchor point="LEFT">
+                                <Offset>
+                                    <AbsDimension x="358" y="0"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad>
+                                getglobal(this:GetName() .. "Text"):SetText("Missing")
+                            </OnLoad>
+                            <OnClick>
+                                TransmogFilters_OnMissingClick(this)
+                            </OnClick>
+                            <OnEnter>
+                                GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+                                GameTooltip:SetText("Missing appearances")
+                                GameTooltip:AddLine("Show the looks this item could use that you haven't collected yet.", 1, 1, 1, true)
+                                GameTooltip:Show()
+                            </OnEnter>
+                            <OnLeave>
+                                GameTooltip:Hide()
+                            </OnLeave>
+                        </Scripts>
+                    </CheckButton>
+                </Frames>
+            </Frame>
             <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
                 <Anchors>
                     <Anchor point="CENTER" relativePoint="TOPRIGHT">
