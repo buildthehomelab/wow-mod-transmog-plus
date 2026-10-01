@@ -39,6 +39,11 @@ it collects appearances the retail way (see below) and ships a migration from mo
   [rotation]` nudges the selected slot's tiles for the session (`/transmog camera reset` undoes
   it); positive depth zooms in, positive height shows lower on the body.
 - Option to hide individual armor slots (helm, shoulders, chest, etc.).
+- Right-click a slot in the window to strip its transmog, or click the disenchant icon next to
+  the reset arrow to strip every slot and illusion at once; Apply confirms it (free).
+- Set bonus tooltips count your real equipped pieces. The client counts the visible
+  (transmogged) items, so without the addon a transmogged set piece showed as missing and its
+  bonuses grey, although the server applied them all along.
 
 
 ## Optional Addon (WIP)

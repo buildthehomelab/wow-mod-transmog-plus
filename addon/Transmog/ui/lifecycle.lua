@@ -171,5 +171,6 @@ function Transmog:Reset(once)
 
     Transmog_switchTab(self.tab)
     AddButtonOnEnterTextTooltip(TransmogFrameRevert, "Reset")
+    AddButtonOnEnterTextTooltip(TransmogFrameRemoveAll, "Remove all transmogs", "Click Apply to confirm")
 
 end

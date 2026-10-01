@@ -355,6 +355,34 @@ function Transmog_revert()
     Transmog:calculateCost(0)
 end
 
+-- Stages a reset on every transmogged slot and illusion; Apply sends it, like right-clicking each slot.
+function Transmog_RemoveAll()
+    local staged = false
+    for slotName, InventorySlotId in pairs(Transmog.inventorySlots) do
+        if (Transmog.transmogStatusToServer[InventorySlotId] or 0) ~= 0 and Transmog_Try(0, slotName, 'newReset') then
+            staged = true
+        end
+    end
+    for slot, enchant in pairs(Transmog.illusionStatusToServer) do
+        if enchant ~= 0 then
+            Transmog.illusionStatusToServer[slot] = 0
+            staged = true
+        end
+    end
+
+    if not staged then
+        twfprint("Nothing is transmogrified.")
+        return
+    end
+
+    Transmog:RefreshPendingGlows()
+    Transmog:RefreshPreviewModel()
+    if Transmog.tab == 'illusions' then
+        Transmog:RenderIllusions()
+    end
+    Transmog:calculateCost()
+end
+
 -- Switches between the items and outfits tabs.
 function Transmog_switchTab(to)
 
