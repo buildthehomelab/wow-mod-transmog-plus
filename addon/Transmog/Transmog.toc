@@ -1,6 +1,6 @@
 ## Interface: 30300
 ## Title: Transmog
-## Version: 1.4.0
+## Version: 1.4.1
 ## Notes: Transmog UI, ported from CMaNGOS to AzerothCore mod-transmog-plus
 ## SavedVariables: transmogSetBonusTiers
 ## SavedVariablesPerCharacter: transmogOutfits, transmogOutfitsSynced
@@ -12,6 +12,7 @@ core\helpers.lua
 features\item_cache.lua
 features\collection_tooltips.lua
 features\set_bonus_tooltips.lua
+features\real_slot_icons.lua
 features\addon_protocol.lua
 features\extended_protocol.lua
 features\apply_transmog.lua

@@ -44,6 +44,8 @@ it collects appearances the retail way (see below) and ships a migration from mo
 - Set bonus tooltips count your real equipped pieces. The client counts the visible
   (transmogged) items, so without the addon a transmogged set piece showed as missing and its
   bonuses grey, although the server applied them all along.
+- The character pane shows your real items' icons and quality, also on hidden slots. The client
+  otherwise draws the transmog appearance's icon, and an empty slot for a hidden one.
 
 
 ## Optional Addon (WIP)
