@@ -758,6 +758,26 @@
                     </OnClick>
                 </Scripts>
             </Button>
+            <Button name="$parentRemoveAll" hidden="false" text="" topLevel="true">
+                <Size>
+                    <AbsDimension x="22" y="22"/>
+                </Size>
+                <Anchors>
+                    <Anchor point="RIGHT" relativeTo="$parentRevert" relativePoint="LEFT">
+                        <Offset>
+                            <AbsDimension x="-4" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <NormalTexture file="Interface\Icons\INV_Enchant_Disenchant"/>
+                <PushedTexture file="Interface\Icons\INV_Enchant_Disenchant"/>
+                <HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD"/>
+                <Scripts>
+                    <OnClick>
+                        Transmog_RemoveAll()
+                    </OnClick>
+                </Scripts>
+            </Button>
             <Button name="$parentItemsButton" inherits="UIPanelButtonTemplate" text="">
                 <NormalTexture name="$parentNormalTexture" file="Interface\AddOns\Transmog\assets\tab_active">
                     <Size>
