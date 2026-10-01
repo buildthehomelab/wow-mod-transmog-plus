@@ -99,28 +99,11 @@ function Transmog:OnIllusionStatus(mainHand, offHand)
     self:RefreshPendingGlows()
 end
 
-local function positionWeaponModel(model, slot, race)
-    local Z, X, Y = model:GetPosition()
-    if race == 'nightelf' then
-        Z = Z + 3
-    elseif race == 'troll' then
-        Z = Z + 2
-    elseif race == 'goblin' then
-        Z = Z - 0.5
-    end
-
-    if slot == 16 then
-        model:SetRotation(0.61)
-        if race == 'gnome' then
-            Y = Y - 2
-        elseif race == 'dwarf' then
-            Y = Y - 1
-        end
-        model:SetPosition(Z + 3.8, X, Y + 0.4)
-    else
-        model:SetRotation(-0.61)
-        model:SetPosition(Z + 3.8, X, Y)
-    end
+-- Same framing as the Items tab weapon tiles (ui/tile_camera.lua).
+local function positionWeaponModel(model, slot, link)
+    local invType = link and select(9, GetItemInfo(link))
+    Transmog:FrameWeaponModel(model, invType)
+    Transmog:ApplyCameraNudge(model, slot)
 end
 
 -- Grid of illusions for the selected weapon slot: "No illusion" (the weapon's own enchant),
@@ -184,9 +167,9 @@ function Transmog:RenderIllusions()
 
             local model = getglobal('TransmogLook' .. itemIndex .. 'ItemModel')
             model:SetUnit("player")
-            positionWeaponModel(model, slot, self.race)
-            model:Undress()
             local link = self:WeaponLinkForSlot(slot, self:EnchantShownForSlot(slot, entry.id))
+            positionWeaponModel(model, slot, link)
+            model:Undress()
             if link then
                 model:TryOn(link)
             end

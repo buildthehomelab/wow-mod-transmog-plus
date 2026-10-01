@@ -16,6 +16,9 @@ function Transmog_OnLoad()
     TransmogFrameInstructions:SetText("Are you tired of wearing the same armor every day?\nSelect the item you wish to change and enjoy your new stylish look.")
     TransmogFrameNoTransmogs:SetText(Transmog.NO_TRANSMOGS_TEXT)
 
+    -- The bar's XML size loses to its template's, which ran it past the window's right edge.
+    TransmogFrameCollected:SetWidth(205)
+
     if not transmogOutfits then
         transmogOutfits = {}
     end

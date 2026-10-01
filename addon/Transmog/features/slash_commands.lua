@@ -13,11 +13,15 @@ function Transmog_Toggle()
     end
 end
 
--- /transmog toggles the window; /transmog anchor shows the new-appearance alert anchor window.
+-- /transmog toggles the window; /transmog anchor shows the new-appearance alert anchor window;
+-- /transmog camera tunes the preview tiles' framing (ui/tile_camera.lua).
 SLASH_TRANSMOG1 = "/transmog"
 SlashCmdList["TRANSMOG"] = function(cmd)
-    if cmd and strlower(strtrim(cmd)) == "anchor" then
+    local command = strlower(strtrim(cmd or ""))
+    if command == "anchor" then
         Transmog.newTransmogAlert:ShowAnchor()
+    elseif string.sub(command, 1, 6) == "camera" then
+        Transmog:CameraCommand(strtrim(string.sub(command, 7)))
     else
         Transmog_Toggle()
     end

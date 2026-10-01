@@ -200,6 +200,9 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
             if self.race == 'goblin' then
                 Z = Z - 0.5
             end
+            if self.race == 'scourge' then
+                Z = Z + 2
+            end
 
             if self.currentTransmogSlot == self.inventorySlots['HeadSlot'] then
                 if self.race == 'tauren' then
@@ -334,50 +337,13 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
                 model:SetPosition(Z + 4.8, X, Y + 1.5)
             end
 
-            if self.currentTransmogSlot == self.inventorySlots['MainHandSlot'] then
-                model:SetRotation(0.61);
-                if self.race == 'gnome' then
-                    Y = Y - 2
-                end
-                if self.race == 'dwarf' then
-                    Y = Y - 1
-                end
-                model:SetPosition(Z + 3.8, X, Y + 0.4)
+            if self:IsWeaponSlot(self.currentTransmogSlot) then
+                self:FrameWeaponModel(model, item.equip_slot)
             end
 
-            if self.currentTransmogSlot == self.inventorySlots['SecondaryHandSlot'] then
-                model:SetRotation(-0.61);
-                model:SetPosition(Z + 3.8, X, Y)
-                if self.race == 'gnome' then
-                    Y = Y - 1.5
-                end
-                if self.race == 'dwarf' then
-                    Y = Y - 1
-                end
-            end
-
-            if self.currentTransmogSlot == self.inventorySlots['RangedSlot'] then
-                model:SetRotation(-0.61)
-                if self.invTypes[item.equip_slot] == C_INVTYPE_RANGEDRIGHT then
-                    model:SetRotation(0.61);
-                end
-                if self.race == 'troll' then
-                    Y = Y + 1.5
-                end
-                if self.race == 'goblin' then
-                    Y = Y + 1
-                end
-                if self.race == 'gnome' then
-                    Y = Y - 1.5
-                end
-                model:SetPosition(Z + 3.8, X, Y)
-            end
+            self:ApplyCameraNudge(model, self.currentTransmogSlot)
 
             model:Undress()
-
-            if self.currentTransmogSlot == self.inventorySlots['SecondaryHandSlot'] then
-                TransmogFramePlayerModel:TryOn(self.equippedItems[self.inventorySlots['MainHandSlot']])
-            end
 
             if item.id ~= Transmog.HIDDEN_ITEM_ID then
                 -- Missing looks usually aren't in the client cache yet, and TryOn needs them there.
