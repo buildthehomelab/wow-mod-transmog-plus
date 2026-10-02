@@ -144,7 +144,7 @@ bool TransmogRules_CanNeverTransmog(ItemTemplate const* proto)
 }
 
 // Apply source-item quality, class, and requirement checks before collection use.
-bool TransmogRules_IsItemTransmogrifiable(Player const* player, ItemTemplate const* proto)
+bool TransmogRules_IsItemTransmogrifiable(Player const* /*player*/, ItemTemplate const* proto)
 {
     if (!proto)
         return false;
