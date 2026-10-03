@@ -109,6 +109,29 @@ function Transmog:prepareAvailableTransmogs(slot, itemClass)
         })
     end
 
+    -- The server never lists the equipped item's own look (applying it would change nothing),
+    -- but like retail it goes first, so the item's look can be picked back after a transmog.
+    local equippedLink = GetInventoryItemLink('player', slot)
+    local equippedID = equippedLink and self:IDFromLink(equippedLink)
+    if equippedID then
+        local name, link, quality, _, _, class, subclass, _, inv_type, tex = GetItemInfo(equippedID)
+        if name then
+            table.insert(self.availableTransmogItems[slot][itemClass], 1, {
+                ['id'] = equippedID,
+                ['reset'] = true,
+                ['name'] = name,
+                ['link'] = link,
+                ['quality'] = quality,
+                ['t1'] = class,
+                ['t2'] = subclass,
+                ['equip_slot'] = inv_type,
+                ['tex'] = tex,
+                ['itemLink'] = equippedLink,
+                ['sources'] = { equippedID }
+            })
+        end
+    end
+
 	twfdebug("prepareAvailableTransmogs end")
 end
 
@@ -158,19 +181,21 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
 
             self.ItemButtons[itemIndex].name = item.name
             self.ItemButtons[itemIndex].id = item.id
+            self.ItemButtons[itemIndex].reset = item.reset
 
             getglobal('TransmogLook' .. itemIndex .. 'Button'):SetID(item.id)
             getglobal('TransmogLook' .. itemIndex .. 'ButtonRevert'):Hide()
             getglobal('TransmogLook' .. itemIndex .. 'ButtonCheck'):Hide()
 
-            if item.id == self.transmogStatusToServer[slot] then
+            local staged = self.transmogStatusToServer[slot] or 0
+            if item.id == staged or (item.reset and staged == 0) then
                 getglobal('TransmogLook' .. itemIndex .. 'Button'):SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_selected')
             else
                 getglobal('TransmogLook' .. itemIndex .. 'Button'):SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_normal')
             end
 
             self:SetLookTooltip(getglobal('TransmogLook' .. itemIndex .. 'Button'), item)
-            if item.reset then
+            if item.reset and staged ~= 0 then
                 getglobal('TransmogLook' .. itemIndex .. 'ButtonRevert'):Show()
             end
             self:SetMissingShade(itemIndex, item.missing)
@@ -437,6 +462,9 @@ function Transmog:ShowLookTooltip(owner, item)
             if sources and sources.loading then
                 FashionTooltip:AddLine("|cff808080Loading all sources...|r")
             end
+        end
+        if item.reset then
+            FashionTooltip:AddLine("Your equipped item's own look", 0.5, 0.5, 0.5)
         end
         if item.missing then
             FashionTooltip:AddLine("Not collected", 1, 0.27, 0.27)
