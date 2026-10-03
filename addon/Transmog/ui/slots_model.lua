@@ -21,6 +21,12 @@ function Transmog:frameFromInvType(invType, clientSlot)
     if invType == 'INVTYPE_CHEST' or invType == 'INVTYPE_ROBE' then
         return ChestSlot
     end
+    if invType == 'INVTYPE_BODY' then
+        return ShirtSlot
+    end
+    if invType == 'INVTYPE_TABARD' then
+        return TabardSlot
+    end
     if invType == 'INVTYPE_WRIST' then
         return WristSlot
     end

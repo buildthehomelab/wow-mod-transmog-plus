@@ -82,6 +82,8 @@ local characterPaperDollFrames = {
     CharacterShoulderSlot,
     CharacterBackSlot,
     CharacterChestSlot,
+    CharacterShirtSlot,
+    CharacterTabardSlot,
     CharacterWristSlot,
     CharacterHandsSlot,
     CharacterWaistSlot,
