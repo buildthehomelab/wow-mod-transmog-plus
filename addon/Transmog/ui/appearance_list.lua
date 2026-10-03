@@ -238,7 +238,10 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
                 model:SetPosition(Z + 3.8, X, Y - 0.7)
             end
 
-            if self.currentTransmogSlot == self.inventorySlots['ChestSlot'] then
+            -- Shirts and tabards sit on the torso, so they share the chest framing.
+            if self.currentTransmogSlot == self.inventorySlots['ChestSlot'] or
+                    self.currentTransmogSlot == self.inventorySlots['ShirtSlot'] or
+                    self.currentTransmogSlot == self.inventorySlots['TabardSlot'] then
                 if self.race == 'tauren' then
                     model:SetRotation(0.3);
                     X = X - 0.2

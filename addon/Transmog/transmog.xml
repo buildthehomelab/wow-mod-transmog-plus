@@ -1088,9 +1088,27 @@
                     </Anchor>
                 </Anchors>
             </Button>
-            <Button name="WristSlot" hidden="false" inherits="TransmogPlayerSlot" text="">
+            <Button name="ShirtSlot" hidden="false" inherits="TransmogPlayerSlot" text="">
                 <Anchors>
                     <Anchor point="TOP" relativeTo="ChestSlot" relativePoint="BOTTOM">
+                        <Offset>
+                            <AbsDimension x="0" y="-5"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+            </Button>
+            <Button name="TabardSlot" hidden="false" inherits="TransmogPlayerSlot" text="">
+                <Anchors>
+                    <Anchor point="TOP" relativeTo="ShirtSlot" relativePoint="BOTTOM">
+                        <Offset>
+                            <AbsDimension x="0" y="-5"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+            </Button>
+            <Button name="WristSlot" hidden="false" inherits="TransmogPlayerSlot" text="">
+                <Anchors>
+                    <Anchor point="TOP" relativeTo="TabardSlot" relativePoint="BOTTOM">
                         <Offset>
                             <AbsDimension x="0" y="-5"/>
                         </Offset>

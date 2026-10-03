@@ -14,6 +14,7 @@ Transmog.prefix = "transmog"
 Transmog.inventorySlots = {
     ['HeadSlot'] = 1,
     ['ShoulderSlot'] = 3,
+    ['ShirtSlot'] = 4,
     ['ChestSlot'] = 5,
     ['WaistSlot'] = 6,
     ['LegsSlot'] = 7,
@@ -23,12 +24,14 @@ Transmog.inventorySlots = {
     ['BackSlot'] = 15,
     ['MainHandSlot'] = 16,
     ['SecondaryHandSlot'] = 17,
-    ['RangedSlot'] = 18
+    ['RangedSlot'] = 18,
+    ['TabardSlot'] = 19
 }
 
 Transmog.inventorySlotNames = {
     [1] = "Head Slot",
     [3] = "Shoulder Slot",
+    [4] = "Shirt Slot",
     [5] = "Chest Slot",
     [6] = "Waist Slot",
     [7] = "Legs Slot",
@@ -38,7 +41,8 @@ Transmog.inventorySlotNames = {
     [15] = "Back Slot",
     [16] = "Main Hand Slot",
     [17] = "Off Hand Slot",
-    [18] = "Ranged Slot"
+    [18] = "Ranged Slot",
+    [19] = "Tabard Slot"
 }
 
 -- Must stay in sync with HIDDEN_ITEM_ID in mod-transmog-plus/src/Transmog.h.
@@ -50,6 +54,7 @@ Transmog.HIDDEN_ILLUSION_ID = 999999
 Transmog.hideableSlots = {
     [1] = true,  -- Head
     [3] = true,  -- Shoulder
+    [4] = true,  -- Shirt
     [5] = true,  -- Chest
     [6] = true,  -- Waist
     [7] = true,  -- Legs
@@ -57,12 +62,14 @@ Transmog.hideableSlots = {
     [9] = true,  -- Wrist
     [10] = true, -- Hands
     [15] = true, -- Back
+    [19] = true, -- Tabard
 }
 
 Transmog.invTypes = {
     ['INVTYPE_HEAD'] = 1,
     ['INVTYPE_SHOULDER'] = 3,
     ['INVTYPE_CLOAK'] = 16,
+    ['INVTYPE_BODY'] = 4,
     ['INVTYPE_CHEST'] = 5,
     ['INVTYPE_ROBE'] = 20,
     ['INVTYPE_WAIST'] = 6,
@@ -70,6 +77,7 @@ Transmog.invTypes = {
     ['INVTYPE_FEET'] = 8,
     ['INVTYPE_WRIST'] = 9,
     ['INVTYPE_HAND'] = 10,
+    ['INVTYPE_TABARD'] = 19,
 
     ['INVTYPE_WEAPON'] = 13,
     ['INVTYPE_WEAPONMAINHAND'] = 21,
@@ -98,6 +106,7 @@ EQUIPMENT_SLOT_BACK = 14
 EQUIPMENT_SLOT_MAINHAND = 15
 EQUIPMENT_SLOT_OFFHAND = 16
 EQUIPMENT_SLOT_RANGED = 17
+EQUIPMENT_SLOT_TABARD = 18
 
 C_INVTYPE_HEAD = 1;
 C_INVTYPE_SHOULDERS = 3;
@@ -116,6 +125,7 @@ C_INVTYPE_2HWEAPON = 17;
 C_INVTYPE_ROBE = 20;
 C_INVTYPE_WEAPONMAINHAND = 21;
 C_INVTYPE_WEAPONOFFHAND = 22;
+C_INVTYPE_TABARD = 19;
 C_INVTYPE_HOLDABLE = 23;
 C_INVTYPE_THROWN = 25;
 C_INVTYPE_RANGEDRIGHT = 26;
