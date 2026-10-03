@@ -159,6 +159,14 @@ function Transmog_Try(itemId, slotName, newReset)
         if data.id == itemId then
             getglobal('TransmogLook' .. itemIndex .. 'Button'):SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_selected')
         end
+        -- The item's own look offers a revert only while something else is staged.
+        if data.reset then
+            if Transmog.transmogStatusToServer[Transmog.currentTransmogSlot] ~= 0 then
+                getglobal('TransmogLook' .. itemIndex .. 'ButtonRevert'):Show()
+            else
+                getglobal('TransmogLook' .. itemIndex .. 'ButtonRevert'):Hide()
+            end
+        end
     end
 
     getglobal(Transmog.currentTransmogSlotName .. 'AutoCast'):Hide()

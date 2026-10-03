@@ -4,7 +4,7 @@ local Transmog = _G.Transmog
 -- account hasn't collected yet. Collected looks are filtered here; missing looks come from the
 -- server (GetMissing), which knows every item and runs the search there too.
 
-Transmog.NO_TRANSMOGS_TEXT = "You have yet to uncover any kind of appearance for this item. \nAppearances unlock when you loot, buy, craft or equip an item."
+Transmog.NO_TRANSMOGS_TEXT = "You have yet to uncover any other appearance for this item. \nAppearances unlock when you loot, buy, craft or equip an item."
 
 local SEARCH_DELAY = 0.4
 local MISSING_TIMEOUT = 5
