@@ -56,6 +56,16 @@ gossip menu is used as a fallback.
 
 ![Addon UI](docs/addon_preview.png)
 
+## Requirements
+
+- An [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk) WotLK (master) server. It
+  also builds on the mod-playerbots core fork; no playerbot module is needed.
+- A WoW 3.3.5a (12340) client.
+- The `Transmog` addon (in `addon/`) for the transmog window, collection tooltips, outfits and
+  sets. Without it only the NPC's gossip menu works.
+- Don't run it together with [azerothcore/mod-transmog](https://github.com/azerothcore/mod-transmog);
+  see "Migrating from mod-transmog".
+
 ## Installation
 
 1. Clone the module into the `modules/` folder of your AzerothCore source directory. Keep the
@@ -101,8 +111,24 @@ All prices, quality restrictions, type rules, and requirement ignores are config
   client to show an incorrect set count (e.g. 5/6 instead of 6/6). The set bonus still
   functions correctly -- this is a display-only issue in the character sheet.
 
+## Troubleshooting
+
+- **The module builds but the NPC and commands do nothing**: the folder isn't named
+  `mod-transmog-plus`, so AzerothCore never calls the loader.
+- **No transmog window, only a gossip menu**: the `Transmog` addon isn't installed in the
+  client's `Interface/AddOns/`. `/transmog` also needs the addon and `Transmog.OpenAnywhere = 1`.
+- **The NPC isn't there**: spawn it with `.npc add 190012`. The old mod-transmog NPC (190010)
+  no longer does anything.
+- **Two transmog modules**: remove mod-transmog before adding this one and migrate its data,
+  see "Migrating from mod-transmog".
+- **A hidden slot's icon turns invisible on the character sheet, or a set shows 5/6 instead of
+  6/6**: both are known display-only limitations, see "Known Limitations".
+
 ## Credits
 
+Author of this fork: [buildthehomelab](https://github.com/buildthehomelab)
+
+Based on:
 - [flekz-games](https://github.com/flekz-games) for [cmangos-transmog](https://github.com/flekz-games/cmangos-transmog)
 - [malinmr](https://github.com/malinmr) for porting the addon to AzerothCore
 - [Stefan2102](https://github.com/Stefan2102) for mod-transmog-plus
@@ -110,4 +136,4 @@ All prices, quality restrictions, type rules, and requirement ignores are config
 
 ## License
 
-GNU Affero General Public License v3 -- see `LICENSE`.
+GNU Affero General Public License v3, see [LICENSE](LICENSE).
