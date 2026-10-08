@@ -211,4 +211,71 @@ Transmog.OpenAnywhere = 1
 
 Transmog.Illusions.Enable = 1
 
+#
+#    BACKPACKS
+#
+#    Transmog.Backpacks.Enable
+#        Description: Backpacks worn on the character's back, picked in the window's Backpacks tab.
+#                     Each one is a hidden aura whose model comes from the realm's client patch
+#                     (spells 90170-90178, from buildthehomelab/wow-mod-visible-bags). Unlocks and
+#                     the choice are per character. The list is the world table
+#                     mod_transmog_plus_backpacks.
+#        Default:     1
+#
+
+Transmog.Backpacks.Enable = 1
+
+#
+#    Transmog.Backpacks.HideCloak
+#        Description: Hide the cloak while a backpack is shown. The cloak stays equipped.
+#        Default:     1
+#
+
+Transmog.Backpacks.HideCloak = 1
+
+#
+#    Transmog.Backpacks.PhaseQuestBase
+#        Description: mod-individual-progression records phase n as cleared by rewarding quest
+#                     base + n. A backpack with UnlockPhase n unlocks once that quest is rewarded.
+#        Default:     66000
+#
+
+Transmog.Backpacks.PhaseQuestBase = 66000
+
+#
+#    Transmog.Backpacks.Mail.Enable
+#        Description: Send every character (bots excepted) one letter introducing backpacks, with
+#                     the item that unlocks the first one. Characters get it on their next login.
+#        Default:     1
+#
+
+Transmog.Backpacks.Mail.Enable = 1
+
+#
+#    Transmog.Backpacks.Mail.Item
+#        Description: The item in the letter. Its item_template row needs ScriptName
+#                     'transmog_backpack_unlock' and a mod_transmog_plus_backpacks row naming it.
+#        Default:     27621 (Halfhill Farmer's Backpack)
+#
+
+Transmog.Backpacks.Mail.Item = 27621
+
+#
+#    Transmog.Backpacks.Mail.Sender
+#        Description: creature_template entry the letter comes from (MAIL_CREATURE).
+#        Default:     9500000 ("Blizzard Services", from mod-server-mail)
+#
+
+Transmog.Backpacks.Mail.Sender = 9500000
+
+#
+#    Transmog.Backpacks.Mail.Subject
+#    Transmog.Backpacks.Mail.Body
+#        Description: The letter's text. In the body, \n starts a new line. Leave Body unset for
+#                     the built-in text.
+#        Default:     "Something for your back"
+#
+
+Transmog.Backpacks.Mail.Subject = "Something for your back"
+
 ###################################################################################################

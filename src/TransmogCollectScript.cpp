@@ -49,6 +49,12 @@ namespace
     }
 }
 
+bool Transmog_IsBotSession(Player* player)
+{
+    WorldSession* session = player ? player->GetSession() : nullptr;
+    return !session || IsBotSession(session);
+}
+
 // Random bots have accounts of their own and would fill mod_transmog_plus_appearances with
 // everything they loot or wear. Alt bots (your own characters played as bots) share your account,
 // so they collect for you, but only while a real player of that account is grouped with them.

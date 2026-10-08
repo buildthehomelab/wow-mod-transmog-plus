@@ -36,12 +36,17 @@ Transmog.missingSeq = 0
 -- addon waiting (sources, outfits) or stuck with an Apply it will never confirm (illusions).
 Transmog.serverSupportsExtended = false
 Transmog.serverSupportsIllusions = false
+Transmog.serverSupportsBackpacks = false
 
 -- Illusions (weapon enchant visuals), keyed by 1-based slot like the item status tables.
 Transmog.illusionIds = {}
 Transmog.illusionNames = {}
 Transmog.illusionStatusFromServer = { [16] = 0, [17] = 0 }
 Transmog.illusionStatusToServer = { [16] = 0, [17] = 0 }
+
+-- Backpacks: the server's list ({ id, unlocked, phase, byItem, model, name }) and the one worn.
+Transmog.backpackList = {}
+Transmog.backpackChosen = 0
 
 -- Sets tab state
 Transmog.collectedItems = {}

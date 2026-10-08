@@ -1,6 +1,6 @@
 ## Interface: 30300
 ## Title: Transmog
-## Version: 1.5.1
+## Version: 1.6.0
 ## Notes: Transmog UI, ported from CMaNGOS to AzerothCore mod-transmog-plus
 ## SavedVariables: transmogSetBonusTiers
 ## SavedVariablesPerCharacter: transmogOutfits, transmogOutfitsSynced
@@ -26,6 +26,7 @@ ui\tile_camera.lua
 ui\slots_model.lua
 ui\sets_view.lua
 ui\illusions.lua
+ui\backpacks.lua
 ui\costs.lua
 ui\tooltips.lua
 ui\animations.lua

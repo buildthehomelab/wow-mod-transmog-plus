@@ -73,7 +73,10 @@ enum TransmogString : uint32
     LANG_TRANSMOG_EMPTY_SLOT,
     LANG_TRANSMOG_SCAN_ADDED,
     LANG_TRANSMOG_OPEN_ANYWHERE_DISABLED,
-    LANG_TRANSMOG_ILLUSION_ADDED
+    LANG_TRANSMOG_ILLUSION_ADDED,
+    LANG_TRANSMOG_BACKPACK_ADDED,
+    LANG_TRANSMOG_BACKPACK_KNOWN,
+    LANG_TRANSMOG_BACKPACK_DISABLED
 };
 
 inline std::string const& Tstr(WorldSession* session, uint32 id)
@@ -129,6 +132,49 @@ public:
 
     // Weapon enchant visuals collected from enchanting and shown through transmog.
     bool IllusionsEnable;
+
+    // Backpacks (TransmogBackpacks.cpp): a model on the back from a hidden aura, per character.
+    bool BackpacksEnable;
+    bool BackpacksHideCloak;
+    uint32 BackpackPhaseQuestBase;
+    bool BackpackMailEnable;
+    uint32 BackpackMailItem;
+    uint32 BackpackMailSender;
+    std::string BackpackMailSubject;
+    std::string BackpackMailBody;
+
+    struct BackpackEntry
+    {
+        uint32 id = 0;
+        std::string name;
+        uint32 spellId = 0;
+        uint8 unlockPhase = 0; // individual progression phase that unlocks it; 0 = not by phase
+        uint32 unlockItem = 0; // item that unlocks it on use; 0 = none
+        std::string model;     // client model path, for the addon's preview
+    };
+    // Loaded at startup, read-only afterwards.
+    std::vector<BackpackEntry> backpacks;
+    std::unordered_set<uint32> backpackSpells;
+
+    void LoadBackpacks();
+    BackpackEntry const* GetBackpack(uint32 id) const;
+    BackpackEntry const* GetBackpackByItem(uint32 itemEntry) const;
+    void LoadPlayerBackpacks(ObjectGuid guid);
+    void UnloadPlayerBackpacks(ObjectGuid guid);
+    bool IsBackpackUnlocked(ObjectGuid guid, uint32 id) const;
+    uint32 GetChosenBackpack(ObjectGuid guid) const;
+    // Returns true when the backpack is new to the character.
+    bool UnlockBackpack(Player* player, uint32 id, bool announce);
+    uint8 GetProgressionPhase(Player const* player) const;
+    void SyncPhaseUnlocks(Player* player, bool announce);
+    // 0 takes the backpack off.
+    TransmogApplyResult ApplyBackpack(Player* player, uint32 id);
+    bool CanShowBackpack(Player const* player) const;
+    void ShowBackpack(Player* player);
+    bool IsBackpackShown(Player const* player) const;
+    void MarkBackpackDirty(ObjectGuid guid);
+    void UpdateBackpack(Player* player, uint32 diff);
+    void SendBackpackIntroMail(Player* player);
 
     // Account appearance data is shared while logged-in characters reference it.
     std::unordered_map<uint32, std::unordered_set<uint32>> collectionCache;
@@ -211,6 +257,8 @@ public:
 
 // False for random bots, and for alt bots unless grouped with their account's real player.
 bool TransmogCollect_CanCollect(Player* player);
+// True for any session without a socket (random and alt bots).
+bool Transmog_IsBotSession(Player* player);
 
 bool TransmogRules_IsArmorSlot(uint8 slot);
 bool TransmogRules_IsArmorProficiencySpell(uint32 spellId);

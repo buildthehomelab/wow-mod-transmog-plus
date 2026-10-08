@@ -80,5 +80,34 @@ function Transmog:HandleExtendedMessage(message)
         return true
     end
 
+    if message == "Backpacks:start" then
+        self:OnBackpacksStart()
+        return true
+    end
+    if message == "Backpacks:end" then
+        self:OnBackpacksLoaded()
+        return true
+    end
+    if startsWith(message, "Backpack:") then
+        local id, unlocked, phase, byItem, model, name = string.match(message, "^Backpack:(%d+):(%d):(%d+):(%d):([^:]*):(.*)$")
+        if id then
+            self:OnBackpack(tonumber(id), tonumber(unlocked), tonumber(phase), tonumber(byItem), model, name)
+        end
+        return true
+    end
+    if startsWith(message, "BackpackStatus:") then
+        self:OnBackpackStatus(tonumber(string.sub(message, 16)))
+        return true
+    end
+    if startsWith(message, "ApplyBackpackResult:") then
+        local success, id = string.match(message, "^ApplyBackpackResult:(%d+):(%d+)$")
+        self:ApplyBackpackResult(tonumber(success), tonumber(id))
+        return true
+    end
+    if startsWith(message, "BackpackUnlocked:") then
+        self:OnBackpackUnlocked(tonumber(string.sub(message, 18)))
+        return true
+    end
+
     return false
 end

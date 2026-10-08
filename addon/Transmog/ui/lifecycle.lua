@@ -17,7 +17,7 @@ function Transmog_OnLoad()
     TransmogFrameNoTransmogs:SetText(Transmog.NO_TRANSMOGS_TEXT)
 
     -- The bar's XML size loses to its template's, which ran it past the window's right edge.
-    TransmogFrameCollected:SetWidth(205)
+    TransmogFrameCollected:SetWidth(150)
 
     if not transmogOutfits then
         transmogOutfits = {}
@@ -65,6 +65,7 @@ function Transmog:LoadOnce()
 	self:aSend("GetAvailableTransmogs:grouped")
 	self:aSend("GetOutfits")
 	self:aSend("GetIllusions")
+	self:aSend("GetBackpacks")
 end
 
 -- Sets up the transmog frame UI, model controls, and initial state when shown.
@@ -151,6 +152,7 @@ function Transmog:Reset(once)
         self:aSend("GetTransmogStatus")
         self:aSend("GetAvailableTransmogs:grouped")
         self:aSend("GetIllusions")
+        self:aSend("GetBackpacks")
     end
 
     local race = self.race or "human"
