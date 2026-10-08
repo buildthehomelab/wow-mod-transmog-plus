@@ -37,6 +37,7 @@ Transmog.missingSeq = 0
 Transmog.serverSupportsExtended = false
 Transmog.serverSupportsIllusions = false
 Transmog.serverSupportsBackpacks = false
+Transmog.serverSupportsForms = false
 
 -- Illusions (weapon enchant visuals), keyed by 1-based slot like the item status tables.
 Transmog.illusionIds = {}
@@ -47,6 +48,11 @@ Transmog.illusionStatusToServer = { [16] = 0, [17] = 0 }
 -- Backpacks: the server's list ({ id, unlocked, phase, byItem, model, name }) and the one worn.
 Transmog.backpackList = {}
 Transmog.backpackChosen = 0
+
+-- Druid form looks: the server's list ({ id, unlocked, phase, form, preview, name }) and the
+-- chosen look per form (0 = the default).
+Transmog.formList = {}
+Transmog.formChosen = {}
 
 -- Sets tab state
 Transmog.collectedItems = {}

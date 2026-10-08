@@ -96,6 +96,11 @@ function Transmog_Try(itemId, slotName, newReset)
         return true
     end
 
+    if Transmog.tab == 'forms' and not newReset then
+        Transmog:TryForm(itemId)
+        return true
+    end
+
     if not newReset and Transmog.tab == 'items' then
         if IsModifiedClick("CHATLINK") and Transmog:LinkLook(itemId) then
             return true
@@ -259,6 +264,14 @@ function selectTransmogSlot(InventorySlotId, slotName)
         TransmogFrameItemsButtonText:SetText(HIGHLIGHT_FONT_COLOR_CODE .. 'Items')
     end
 
+    if Transmog.tab == 'forms' and InventorySlotId ~= -1 then
+        Transmog.tab = 'items'
+        Transmog:LeaveFormsView()
+        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        TransmogFrameItemsButtonText:SetText(HIGHLIGHT_FONT_COLOR_CODE .. 'Items')
+    end
+
     if Transmog.tab == 'backpacks' and InventorySlotId ~= -1 then
         Transmog.tab = 'items'
         Transmog:LeaveBackpacksView()
@@ -370,6 +383,13 @@ function Transmog_ChangePage(dir)
         end
         Transmog.currentPage = nextPage
         Transmog:RenderBackpacks()
+    elseif Transmog.tab == 'forms' then
+        local nextPage = math.max(1, math.min(Transmog.currentPage + dir, math.max(1, Transmog.totalPages or 1)))
+        if nextPage ~= Transmog.currentPage then
+            PlaySound("igAbiliityPageTurn")
+        end
+        Transmog.currentPage = nextPage
+        Transmog:RenderForms()
     else
         Transmog_switchTab(Transmog.tab)
     end
@@ -428,6 +448,9 @@ function Transmog_switchTab(to)
     end
     if to ~= 'backpacks' then
         Transmog:LeaveBackpacksView()
+    end
+    if to ~= 'forms' then
+        Transmog:LeaveFormsView()
     end
     if to == 'items' then
         TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
@@ -525,5 +548,30 @@ function Transmog_switchTab(to)
 
         TransmogFrameCollected:Show()
         Transmog:ShowBackpacksView()
+    elseif to == 'forms' then
+        if not Transmog.serverSupportsForms then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff4444[Transmog]|r Form looks are for druids, on realms that have them.")
+            Transmog_switchTab('items')
+            return
+        end
+
+        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
+        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        TransmogFrameItemsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Items')
+
+        if TransmogFrameSetsButton then
+            TransmogFrameSetsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
+            TransmogFrameSetsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+            TransmogFrameSetsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Sets')
+        end
+        Transmog:SetFormsTabActive(true)
+        TransmogFrameFilters:Hide()
+
+        if TransmogSetsFrame then
+            TransmogSetsFrame:Hide()
+        end
+
+        TransmogFrameCollected:Show()
+        Transmog:ShowFormsView()
     end
 end

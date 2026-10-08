@@ -279,3 +279,20 @@ Transmog.Backpacks.Mail.Sender = 9500000
 Transmog.Backpacks.Mail.Subject = "Something for your back"
 
 ###################################################################################################
+
+###################################################################################################
+#    DRUID FORMS
+#
+#    Transmog.Forms.Enable
+#        Description: Druids pick a look for each shapeshift form (bear, cat, travel, aquatic,
+#                     flight, moonkin, tree) from the Forms tab: retail form models from the
+#                     realm's client patch (patch-I). Looks unlock per individual progression
+#                     phase cleared (the phase quests are Transmog.Backpacks.PhaseQuestBase + n).
+#                     The list is the world table mod_transmog_plus_forms.
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled)
+#
+
+Transmog.Forms.Enable = 1
+
+###################################################################################################

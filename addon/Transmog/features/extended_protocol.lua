@@ -109,5 +109,33 @@ function Transmog:HandleExtendedMessage(message)
         return true
     end
 
+    if startsWith(message, "Forms:start") then
+        self:OnFormsStart(tonumber(string.match(message, "^Forms:start:(%d+)$") or 0))
+        return true
+    end
+    if message == "Forms:end" then
+        self:OnFormsLoaded()
+        return true
+    end
+    if startsWith(message, "Form:") then
+        local id, unlocked, phase, form, preview, name = string.match(message, "^Form:(%d+):(%d):(%d+):(%a+):(%d+):(.*)$")
+        if id then
+            self:OnForm(tonumber(id), tonumber(unlocked), tonumber(phase), form, tonumber(preview), name)
+        end
+        return true
+    end
+    if startsWith(message, "FormStatus:") then
+        self:OnFormStatus(string.sub(message, 12))
+        return true
+    end
+    if startsWith(message, "ApplyFormResult:") then
+        self:ApplyFormResult(tonumber(string.match(message, "^ApplyFormResult:(%d)")))
+        return true
+    end
+    if startsWith(message, "FormsUnlocked:") then
+        self:OnFormsUnlocked()
+        return true
+    end
+
     return false
 end

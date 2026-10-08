@@ -74,6 +74,7 @@ void Transmog::LoadConfig()
     IllusionsEnable = sConfigMgr->GetOption<bool>("Transmog.Illusions.Enable", true);
 
     BackpacksEnable = sConfigMgr->GetOption<bool>("Transmog.Backpacks.Enable", true);
+    FormsEnable = sConfigMgr->GetOption<bool>("Transmog.Forms.Enable", true);
     BackpacksHideCloak = sConfigMgr->GetOption<bool>("Transmog.Backpacks.HideCloak", true);
     BackpackPhaseQuestBase = sConfigMgr->GetOption<uint32>("Transmog.Backpacks.PhaseQuestBase", 66000);
     BackpackMailEnable = sConfigMgr->GetOption<bool>("Transmog.Backpacks.Mail.Enable", true);
