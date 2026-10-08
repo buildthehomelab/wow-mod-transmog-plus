@@ -194,7 +194,12 @@ function Transmog:RenderBackpacks()
 
             getglobal('TransmogLook' .. itemIndex .. 'ItemModel'):Hide()
             if not frame.backpackIcon then
-                frame.backpackIcon = frame:CreateTexture(nil, "OVERLAY")
+                -- Above the tile's opaque button background (a texture on the tile itself draws under it).
+                local layer = CreateFrame("Frame", nil, frame)
+                layer:SetAllPoints(button)
+                layer:SetFrameLevel(button:GetFrameLevel() + 2)
+                layer:EnableMouse(false)
+                frame.backpackIcon = layer:CreateTexture(nil, "OVERLAY")
                 frame.backpackIcon:SetWidth(56)
                 frame.backpackIcon:SetHeight(56)
                 frame.backpackIcon:SetPoint("CENTER", button, "CENTER", 0, 4)

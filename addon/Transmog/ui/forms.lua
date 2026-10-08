@@ -47,9 +47,11 @@ requery:SetScript("OnUpdate", function(self, elapsed)
         return
     end
     for model, entry in pairs(self.pending) do
-        if model.creature == entry and model:IsVisible() then
+        if (model.creature == entry or model.formCreature == entry) and model:IsVisible() then
             model:SetCreature(entry)
-            model:SetLight(unpack(model.locked and DARK or LIGHT))
+            if model.creature == entry then
+                model:SetLight(unpack(model.locked and DARK or LIGHT))
+            end
         end
     end
     self.pending = {}
@@ -67,6 +69,38 @@ local function showCreature(model, entry, locked)
     end
     model:SetFacing(0.6)
     model:SetLight(unpack(locked and DARK or LIGHT))
+end
+
+-- The big character model on the left shows a look like the barber shop does: the chosen one,
+-- or the hovered tile. 0 (the default look) shows the character as it is.
+function Transmog:PreviewFormLook(preview)
+    local model = TransmogFramePlayerModel
+    self.formPreviewing = true
+    if not preview or preview == 0 then
+        if model.formCreature then
+            model.formCreature = nil
+            model:SetUnit("player")
+            self:RefreshPreviewModel()
+        end
+        return
+    end
+    if model.formCreature ~= preview then
+        model.formCreature = preview
+        model:SetCreature(preview)
+        requery.pending[model] = preview
+        requery.wait = REQUERY_DELAY
+        requery:Show()
+    end
+end
+
+function Transmog:ChosenFormPreview()
+    local chosen = (self.formChosen or {})[self.formKey] or 0
+    for _, entry in ipairs(self.formList) do
+        if entry.id == chosen then
+            return entry.preview
+        end
+    end
+    return 0
 end
 
 function Transmog:SetFormsTabActive(active)
@@ -137,6 +171,14 @@ end
 -- The tiles are shared with the other tabs: give them their item model back.
 function Transmog:LeaveFormsView()
     self:SetFormsTabActive(false)
+    if self.formPreviewing then
+        self.formPreviewing = false
+        if TransmogFramePlayerModel.formCreature then
+            TransmogFramePlayerModel.formCreature = nil
+            TransmogFramePlayerModel:SetUnit("player")
+            self:RefreshPreviewModel()
+        end
+    end
     if self.formPicker then
         self.formPicker:Hide()
     end
@@ -288,14 +330,37 @@ function Transmog:RenderForms()
                 hint = "|cffff4444Locked.|r " .. self:FormUnlockHint(entry)
             end
             AddButtonOnEnterTextTooltip(button, "|cffff80ff" .. entry.name, hint)
+            -- Hovering a tile tries the look on the big model; leaving goes back to the chosen one.
+            local onEnter, onLeave = button:GetScript("OnEnter"), button:GetScript("OnLeave")
+            local preview = entry.id == 0 and 0 or entry.preview
+            button:SetScript("OnEnter", function(...)
+                if onEnter then onEnter(...) end
+                if Transmog.tab == 'forms' then
+                    Transmog:PreviewFormLook(preview)
+                end
+            end)
+            button:SetScript("OnLeave", function(...)
+                if onLeave then onLeave(...) end
+                if Transmog.tab == 'forms' then
+                    Transmog:PreviewFormLook(Transmog:ChosenFormPreview())
+                end
+            end)
 
             getglobal('TransmogLook' .. itemIndex .. 'ItemModel'):Hide()
             if not frame.formModel then
-                frame.formModel = CreateFrame("PlayerModel", nil, frame)
-                frame.formModel:SetWidth(80)
-                frame.formModel:SetHeight(100)
+                -- The tile's button has an opaque background: the preview and the icon live on a
+                -- layer above it (no mouse, so clicks and tooltips still reach the button).
+                local layer = CreateFrame("Frame", nil, frame)
+                layer:SetAllPoints(button)
+                layer:SetFrameLevel(button:GetFrameLevel() + 2)
+                layer:EnableMouse(false)
+                frame.formModel = CreateFrame("PlayerModel", nil, layer)
+                frame.formModel:SetWidth(76)
+                frame.formModel:SetHeight(96)
                 frame.formModel:SetPoint("CENTER", button, "CENTER", 0, 0)
-                frame.formIcon = frame:CreateTexture(nil, "OVERLAY")
+                frame.formModel:SetFrameLevel(layer:GetFrameLevel() + 1)
+                frame.formModel:EnableMouse(false)
+                frame.formIcon = layer:CreateTexture(nil, "OVERLAY")
                 frame.formIcon:SetWidth(48)
                 frame.formIcon:SetHeight(48)
                 frame.formIcon:SetPoint("CENTER", button, "CENTER", 0, 4)
@@ -321,6 +386,8 @@ function Transmog:RenderForms()
             itemIndex = itemIndex + 1
         end
     end
+
+    self:PreviewFormLook(self:ChosenFormPreview())
 
     TransmogFramePageText:SetText("Page " .. self.currentPage .. "/" .. self.totalPages)
     if self.currentPage == 1 then
