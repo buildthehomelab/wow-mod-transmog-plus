@@ -47,4 +47,7 @@ INSERT INTO `module_string` (`module`, `id`, `string`) VALUES
 ('mod-transmog-plus', 17, 'Equipment slot is empty.'),
 ('mod-transmog-plus', 18, 'appearance(s) from your gear, bags and bank added to your collection.'),
 ('mod-transmog-plus', 19, 'Visit a transmogrifier to change your appearance.'),
-('mod-transmog-plus', 20, 'illusion added to your collection.');
+('mod-transmog-plus', 20, 'illusion added to your collection.'),
+('mod-transmog-plus', 21, 'backpack added to your collection. Pick it in the Backpacks tab of the Transmogrify window (/transmog).'),
+('mod-transmog-plus', 22, 'is already in your backpack collection.'),
+('mod-transmog-plus', 23, 'Backpacks aren\'t available on this realm.');

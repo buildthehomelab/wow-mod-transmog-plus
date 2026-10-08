@@ -117,6 +117,10 @@ uint32 Transmog::GetVisibleEntryForSlot(Player const* player, uint8 slot, Item c
     if (!item || slot >= EQUIPMENT_SLOT_END)
         return 0;
 
+    // A backpack replaces the cloak on the back.
+    if (slot == EQUIPMENT_SLOT_BACK && BackpacksHideCloak && IsBackpackShown(player))
+        return 0;
+
     uint32 fakeEntry = GetSlotAppearance(player->GetGUID(), slot);
     if (fakeEntry == 0)
         return item->GetEntry();

@@ -28,6 +28,13 @@ it collects appearances the retail way (see below) and ships a migration from mo
 - Illusions: weapon enchant glows unlock for the account when you enchant a weapon (or own an
   enchanted one) and can be shown on the main hand or off hand from the Illusions tab, or
   hidden altogether (`Transmog.Illusions.Enable`).
+- Backpacks: Blizzard's newer backpack cloaks, worn on the character's back from the Backpacks
+  tab. Each character gets a letter with the Halfhill Farmer's Backpack (a chicken on a wicker
+  pack) and unlocks one more backpack per individual progression phase cleared (Molten Core
+  through Naxxramas). A worn backpack hides the cloak, and comes off in shapeshift forms. It
+  needs the realm's client patch, which carries the models and spells 90170-90178 (built with
+  [wow-mod-visible-bags](https://github.com/buildthehomelab/wow-mod-visible-bags)); the list
+  is the world table `mod_transmog_plus_backpacks` (`Transmog.Backpacks.*`).
 - Outfits are saved on the server for the whole account. Each character's old outfits are
   uploaded the first time it opens the window.
 - Transmog Sets browser in the addon.

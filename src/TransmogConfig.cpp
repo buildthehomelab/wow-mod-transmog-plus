@@ -2,6 +2,24 @@
 
 namespace
 {
+    // Config strings can't hold real line breaks, so "\n" stands for one.
+    std::string ExpandNewlines(std::string const& text)
+    {
+        std::string out;
+        out.reserve(text.size());
+        for (std::size_t i = 0; i < text.size(); ++i)
+        {
+            if (text[i] == '\\' && i + 1 < text.size() && text[i + 1] == 'n')
+            {
+                out += '\n';
+                ++i;
+            }
+            else
+                out += text[i];
+        }
+        return out;
+    }
+
     std::set<uint32> ParseEntryList(std::string const& value)
     {
     // Configuration entry lists are whitespace-separated numeric item IDs.
@@ -54,4 +72,17 @@ void Transmog::LoadConfig()
     OpenAnywhere = sConfigMgr->GetOption<bool>("Transmog.OpenAnywhere", true);
 
     IllusionsEnable = sConfigMgr->GetOption<bool>("Transmog.Illusions.Enable", true);
+
+    BackpacksEnable = sConfigMgr->GetOption<bool>("Transmog.Backpacks.Enable", true);
+    BackpacksHideCloak = sConfigMgr->GetOption<bool>("Transmog.Backpacks.HideCloak", true);
+    BackpackPhaseQuestBase = sConfigMgr->GetOption<uint32>("Transmog.Backpacks.PhaseQuestBase", 66000);
+    BackpackMailEnable = sConfigMgr->GetOption<bool>("Transmog.Backpacks.Mail.Enable", true);
+    BackpackMailItem = sConfigMgr->GetOption<uint32>("Transmog.Backpacks.Mail.Item", 27621);
+    BackpackMailSender = sConfigMgr->GetOption<uint32>("Transmog.Backpacks.Mail.Sender", 9500000);
+    BackpackMailSubject = sConfigMgr->GetOption<std::string>("Transmog.Backpacks.Mail.Subject", "Something for your back");
+    BackpackMailBody = ExpandNewlines(sConfigMgr->GetOption<std::string>("Transmog.Backpacks.Mail.Body",
+        "Adventurers have started carrying their gear on their backs!\n\n"
+        "Use the enclosed Halfhill Farmer's Backpack to add it to your collection. It goes on right away.\n\n"
+        "Every raid tier you clear unlocks another backpack. Pick between them, or take yours off, "
+        "in the Backpacks tab of the Transmogrify window (/transmog). A backpack hides your cloak while you wear it."));
 }

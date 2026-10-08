@@ -438,6 +438,54 @@ namespace TransmogAddon
             + std::to_string(sTransmog->GetSlotIllusion(player->GetGUID(), EQUIPMENT_SLOT_OFFHAND)));
     }
 
+    void SendBackpackUnlocked(Player* player, uint32 backpackId)
+    {
+        SendToClient(player, "BackpackUnlocked:" + std::to_string(backpackId));
+    }
+
+    void SendBackpackStatus(Player* player)
+    {
+        SendToClient(player, "BackpackStatus:" + std::to_string(sTransmog->GetChosenBackpack(player->GetGUID())));
+    }
+
+    // Every backpack, unlocked or not, in display order:
+    // "Backpacks:start", "Backpack:<id>:<unlocked>:<phase>:<byItem>:<model>:<name>"..., "Backpacks:end",
+    // then the current choice. Backpacks being off sends nothing, so the addon hides the tab.
+    void HandleGetBackpacks(Player* player, std::string const&)
+    {
+        if (!sTransmog->BackpacksEnable)
+            return;
+
+        ObjectGuid guid = player->GetGUID();
+        SendToClient(player, "Backpacks:start");
+        for (Transmog::BackpackEntry const& entry : sTransmog->backpacks)
+        {
+            std::string line = "Backpack:" + std::to_string(entry.id) + ":"
+                + (sTransmog->IsBackpackUnlocked(guid, entry.id) ? "1" : "0") + ":"
+                + std::to_string(entry.unlockPhase) + ":" + (entry.unlockItem ? "1" : "0") + ":"
+                + entry.model + ":" + entry.name;
+            SendToClient(player, line.substr(0, MAX_PAYLOAD));
+        }
+        SendToClient(player, "Backpacks:end");
+        SendBackpackStatus(player);
+    }
+
+    // "ApplyBackpack:<id>", 0 to take it off. Free, like hiding a slot.
+    void HandleApplyBackpack(Player* player, std::string const& args)
+    {
+        uint32 id;
+        if (!sTransmog->BackpacksEnable || !ParseUint32(args, id))
+        {
+            SendToClient(player, "ApplyBackpackResult:0:0");
+            return;
+        }
+
+        TransmogApplyResult result = sTransmog->ApplyBackpack(player, id);
+        bool success = result == TransmogApplyResult::Success || result == TransmogApplyResult::AlreadyApplied;
+        SendToClient(player, "ApplyBackpackResult:" + std::string(success ? "1" : "0") + ":" + std::to_string(id));
+        SendBackpackStatus(player);
+    }
+
     // Collected illusions ("Illusions:start", id lists, "Illusions:end"), each with its
     // localized name ("IllusionName:<id>:<name>"), then the current weapon slot illusions.
     void HandleGetIllusions(Player* player, std::string const&)
@@ -631,6 +679,10 @@ namespace TransmogAddon
             HandleGetIllusions(player, args);
         else if (command == "ApplyIllusion")
             HandleApplyIllusion(player, args);
+        else if (command == "GetBackpacks")
+            HandleGetBackpacks(player, args);
+        else if (command == "ApplyBackpack")
+            HandleApplyBackpack(player, args);
     }
 }
 
