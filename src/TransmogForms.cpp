@@ -191,6 +191,11 @@ void Transmog::ApplyFormLook(Player* player, uint32 displayId)
     if (!look || look == displayId)
         return;
 
+    // A look whose phase the character no longer has (an individual progression reset) stays off.
+    FormEntry const* entry = GetForm(look);
+    if (!entry || !IsFormUnlocked(player, *entry))
+        return;
+
     Unit::AuraEffectList const& shapeshifts = player->GetAuraEffectsByType(SPELL_AURA_MOD_SHAPESHIFT);
     if (shapeshifts.empty())
         return;
