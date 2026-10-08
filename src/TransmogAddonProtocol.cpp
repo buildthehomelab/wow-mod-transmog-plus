@@ -486,6 +486,65 @@ namespace TransmogAddon
         SendBackpackStatus(player);
     }
 
+    void SendFormsUnlocked(Player* player, uint8 phase)
+    {
+        SendToClient(player, "FormsUnlocked:" + std::to_string(phase));
+    }
+
+    // "FormStatus:<form>=<display>,..." for every form; 0 = the default look.
+    void SendFormStatus(Player* player)
+    {
+        std::string line = "FormStatus:";
+        for (uint8 i = 0; i < Transmog::FORM_KIND_COUNT; ++i)
+        {
+            Transmog::FormKind kind = Transmog::FormKind(i);
+            line += std::string(i ? "," : "") + Transmog::FormKindName(kind) + "="
+                + std::to_string(sTransmog->GetChosenForm(player->GetGUID(), kind));
+        }
+        SendToClient(player, line);
+    }
+
+    // Every druid form look, unlocked or not, in display order:
+    // "Forms:start:<phase>", "Form:<display>:<unlocked>:<phase>:<form>:<preview creature>:<name>"...,
+    // "Forms:end", then the choices. Off, or not a druid, sends nothing: the addon hides the tab.
+    void HandleGetForms(Player* player, std::string const&)
+    {
+        if (!sTransmog->FormsEnable || player->getClass() != CLASS_DRUID)
+            return;
+
+        SendToClient(player, "Forms:start:" + std::to_string(sTransmog->GetProgressionPhase(player)));
+        for (Transmog::FormEntry const& entry : sTransmog->forms)
+        {
+            std::string line = "Form:" + std::to_string(entry.displayId) + ":"
+                + (sTransmog->IsFormUnlocked(player, entry) ? "1" : "0") + ":"
+                + std::to_string(entry.unlockPhase) + ":" + Transmog::FormKindName(entry.kind) + ":"
+                + std::to_string(entry.previewCreature) + ":" + entry.name;
+            SendToClient(player, line.substr(0, MAX_PAYLOAD));
+        }
+        SendToClient(player, "Forms:end");
+        SendFormStatus(player);
+    }
+
+    // "ApplyForm:<form>:<display>", display 0 for the default look. Free, like a backpack.
+    void HandleApplyForm(Player* player, std::string const& args)
+    {
+        size_t colon = args.find(':');
+        Transmog::FormKind kind = colon == std::string::npos ? Transmog::FORM_KIND_NONE
+            : Transmog::FormKindByName(args.substr(0, colon));
+        uint32 displayId;
+        if (!sTransmog->FormsEnable || kind == Transmog::FORM_KIND_NONE || !ParseUint32(args.substr(colon + 1), displayId))
+        {
+            SendToClient(player, "ApplyFormResult:0::0");
+            return;
+        }
+
+        TransmogApplyResult result = sTransmog->ApplyForm(player, kind, displayId);
+        bool success = result == TransmogApplyResult::Success || result == TransmogApplyResult::AlreadyApplied;
+        SendToClient(player, "ApplyFormResult:" + std::string(success ? "1" : "0") + ":"
+            + Transmog::FormKindName(kind) + ":" + std::to_string(displayId));
+        SendFormStatus(player);
+    }
+
     // Collected illusions ("Illusions:start", id lists, "Illusions:end"), each with its
     // localized name ("IllusionName:<id>:<name>"), then the current weapon slot illusions.
     void HandleGetIllusions(Player* player, std::string const&)
@@ -683,6 +742,10 @@ namespace TransmogAddon
             HandleGetBackpacks(player, args);
         else if (command == "ApplyBackpack")
             HandleApplyBackpack(player, args);
+        else if (command == "GetForms")
+            HandleGetForms(player, args);
+        else if (command == "ApplyForm")
+            HandleApplyForm(player, args);
     }
 }
 

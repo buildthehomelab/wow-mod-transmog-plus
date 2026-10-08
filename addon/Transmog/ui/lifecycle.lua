@@ -66,6 +66,7 @@ function Transmog:LoadOnce()
 	self:aSend("GetOutfits")
 	self:aSend("GetIllusions")
 	self:aSend("GetBackpacks")
+	self:aSend("GetForms")
 end
 
 -- Sets up the transmog frame UI, model controls, and initial state when shown.
@@ -153,6 +154,7 @@ function Transmog:Reset(once)
         self:aSend("GetAvailableTransmogs:grouped")
         self:aSend("GetIllusions")
         self:aSend("GetBackpacks")
+        self:aSend("GetForms")
     end
 
     local race = self.race or "human"

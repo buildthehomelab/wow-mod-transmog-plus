@@ -7,7 +7,7 @@ local Transmog = _G.Transmog
 local NO_TRANSMOGS_TEXT = "You have yet to uncover any kind of appearance for this item. \nAppearances unlock when you loot, buy, craft or equip an item."
 
 -- Individual progression phase n means this content is cleared.
-local PHASE_NAMES = {
+Transmog.PHASE_NAMES = {
     [1] = "Molten Core",
     [2] = "Onyxia's Lair",
     [3] = "Blackwing Lair",
@@ -27,6 +27,8 @@ local PHASE_NAMES = {
     [17] = "Icecrown Citadel",
     [18] = "the Ruby Sanctum",
 }
+
+local PHASE_NAMES = Transmog.PHASE_NAMES
 
 local ICON_DIR = "Interface\\AddOns\\Transmog\\assets\\backpacks\\"
 local NONE_ICON = "Interface\\Icons\\INV_Misc_Bag_08"

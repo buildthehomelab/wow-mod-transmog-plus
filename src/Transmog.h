@@ -76,7 +76,8 @@ enum TransmogString : uint32
     LANG_TRANSMOG_ILLUSION_ADDED,
     LANG_TRANSMOG_BACKPACK_ADDED,
     LANG_TRANSMOG_BACKPACK_KNOWN,
-    LANG_TRANSMOG_BACKPACK_DISABLED
+    LANG_TRANSMOG_BACKPACK_DISABLED,
+    LANG_TRANSMOG_FORMS_UNLOCKED
 };
 
 inline std::string const& Tstr(WorldSession* session, uint32 id)
@@ -175,6 +176,40 @@ public:
     void MarkBackpackDirty(ObjectGuid guid);
     void UpdateBackpack(Player* player, uint32 diff);
     void SendBackpackIntroMail(Player* player);
+
+    // Druid form looks (TransmogForms.cpp): retail form models from the realm's client patch,
+    // one choice per form, unlocked by individual progression phase.
+    bool FormsEnable;
+
+    enum FormKind : uint8
+    {
+        FORM_KIND_BEAR, FORM_KIND_CAT, FORM_KIND_TRAVEL, FORM_KIND_AQUATIC, FORM_KIND_FLIGHT,
+        FORM_KIND_MOONKIN, FORM_KIND_TREE, FORM_KIND_COUNT, FORM_KIND_NONE = FORM_KIND_COUNT
+    };
+    struct FormEntry
+    {
+        uint32 displayId = 0;
+        FormKind kind = FORM_KIND_NONE;
+        std::string name;
+        uint8 unlockPhase = 0;      // individual progression phase that unlocks it; 0 = from the start
+        uint32 previewCreature = 0; // creature_template entry using the display, for the addon preview
+    };
+    // Loaded at startup, read-only afterwards.
+    std::vector<FormEntry> forms;
+
+    static char const* FormKindName(FormKind kind);
+    static FormKind FormKindByName(std::string const& name);
+    static FormKind FormKindOf(ShapeshiftForm form);
+    void LoadForms();
+    FormEntry const* GetForm(uint32 displayId) const;
+    void LoadPlayerForms(ObjectGuid guid);
+    void UnloadPlayerForms(ObjectGuid guid);
+    bool IsFormUnlocked(Player const* player, FormEntry const& entry) const;
+    uint32 GetChosenForm(ObjectGuid guid, FormKind kind) const;
+    // displayId 0 goes back to the default look.
+    TransmogApplyResult ApplyForm(Player* player, FormKind kind, uint32 displayId);
+    void ApplyFormLook(Player* player, uint32 displayId);
+    void AnnounceFormUnlocks(Player* player, uint8 phase);
 
     // Account appearance data is shared while logged-in characters reference it.
     std::unordered_map<uint32, std::unordered_set<uint32>> collectionCache;

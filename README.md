@@ -35,6 +35,16 @@ it collects appearances the retail way (see below) and ships a migration from mo
   needs the realm's client patch, which carries the models and spells 90170-90178 (built with
   [wow-mod-visible-bags](https://github.com/buildthehomelab/wow-mod-visible-bags)); the list
   is the world table `mod_transmog_plus_backpacks` (`Transmog.Backpacks.*`).
+- Druid forms: druids pick a look for each shapeshift form from the Forms tab, like retail's
+  barber shop. There are 265 retail form looks: the remade bear and cat colours of every druid
+  race, the Legion artifact forms, Dreamsabers, Bristlebruins, stags, owls, Batbears and more.
+  The classic looks are there from the start; each individual progression phase cleared unlocks
+  the next batch, through the Ruby Sanctum. A look goes on whenever the form's normal model
+  would, so transforms (costumes, Polymorph) still win. It needs the realm's client patch
+  (patch-I, built with
+  [wow-mod-retail-druid-forms](https://github.com/buildthehomelab/wow-mod-retail-druid-forms));
+  the list is the world table `mod_transmog_plus_forms`, previewed through creatures
+  9501000-9501499 (`Transmog.Forms.Enable`).
 - Outfits are saved on the server for the whole account. Each character's old outfits are
   uploaded the first time it opens the window.
 - Transmog Sets browser in the addon.
