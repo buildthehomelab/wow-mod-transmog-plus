@@ -30,6 +30,13 @@ INSERT INTO `item_template` (`entry`, `class`, `subclass`, `SoundOverrideSubclas
 (27621, 15, 0, -1, 'Halfhill Farmer\'s Backpack', 68743, 3, 0, 0, 0, 0, -1, -1, 1, 0, 1, 1, 90178, 0, 0, -1, 1, 'A backpack appearance for your Transmogrify collection.', -1, 'transmog_backpack_unlock');
 DELETE FROM `item_template_locale` WHERE `ID` = 27621;
 
+-- The backpack auras are put back by the module at login; saved ones would come back before
+-- the module knows the character and leave the cloak showing through the backpack.
+DELETE FROM `spell_custom_attr` WHERE `spell_id` BETWEEN 90170 AND 90177;
+INSERT INTO `spell_custom_attr` (`spell_id`, `attributes`) VALUES
+(90170, 0x01000000), (90171, 0x01000000), (90172, 0x01000000), (90173, 0x01000000),
+(90174, 0x01000000), (90175, 0x01000000), (90176, 0x01000000), (90177, 0x01000000);
+
 -- Server copies of the client patch's spells: 90170-90177 the backpack auras, 90178 the item's
 -- use spell. 90179-90189 held earlier test spells; clear them.
 DELETE FROM `spell_dbc` WHERE `ID` BETWEEN 90179 AND 90189;

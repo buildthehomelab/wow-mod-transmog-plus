@@ -1,10 +1,13 @@
 #include "Transmog.h"
 #include "TransmogAddonProtocol.h"
 #include "Chat.h"
+#include "DBCStores.h"
 #include "Mail.h"
 #include "SpellAuras.h"
 #include "SpellMgr.h"
 #include "StringFormat.h"
+#include <atomic>
+#include <memory>
 
 // Backpacks: a model on the character's back, shown through a hidden dummy aura whose spell
 // visual attaches the model (the realm's client patch carries the spells, visuals and models).
@@ -19,15 +22,21 @@ namespace
     // Individual progression phases are quests base+1 .. base+MAX_PHASE.
     constexpr uint8 MAX_PHASE = 18;
 
+    // The letter waits in the mailbox this long (default NPC mail lasts 30 days, then its
+    // item is deleted).
+    constexpr uint32 MAIL_EXPIRE_DAYS = 5 * 365;
+
+    // unlocked and chosen change under the map's exclusive lock. The reconcile timer and the
+    // dirty flag are touched by map update threads under the shared lock, so they're atomic.
     struct BackpackPlayerState
     {
         std::unordered_set<uint32> unlocked;
         uint32 chosen = 0;
-        uint32 timer = 0;
-        bool dirty = true;
+        std::atomic<uint32> timer{ 0 };
+        std::atomic<bool> dirty{ true };
     };
 
-    std::unordered_map<ObjectGuid, BackpackPlayerState> playerStates;
+    std::unordered_map<ObjectGuid, std::unique_ptr<BackpackPlayerState>> playerStates;
     std::shared_mutex playerStatesMutex;
 }
 
@@ -83,19 +92,19 @@ Transmog::BackpackEntry const* Transmog::GetBackpackByItem(uint32 itemEntry) con
 
 void Transmog::LoadPlayerBackpacks(ObjectGuid guid)
 {
-    BackpackPlayerState state;
+    auto state = std::make_unique<BackpackPlayerState>();
     if (QueryResult result = CharacterDatabase.Query("SELECT BackpackId FROM mod_transmog_plus_backpack_unlocks WHERE Owner = {}", guid.GetCounter()))
     {
         do
-            state.unlocked.insert(result->Fetch()[0].Get<uint32>());
+            state->unlocked.insert(result->Fetch()[0].Get<uint32>());
         while (result->NextRow());
     }
     if (QueryResult result = CharacterDatabase.Query("SELECT BackpackId FROM mod_transmog_plus_backpack_choice WHERE Owner = {}", guid.GetCounter()))
-        state.chosen = result->Fetch()[0].Get<uint32>();
+        state->chosen = result->Fetch()[0].Get<uint32>();
 
     // A removed backpack, or one that is no longer unlocked, isn't shown.
-    if (state.chosen && (!GetBackpack(state.chosen) || !state.unlocked.contains(state.chosen)))
-        state.chosen = 0;
+    if (state->chosen && (!GetBackpack(state->chosen) || !state->unlocked.contains(state->chosen)))
+        state->chosen = 0;
 
     std::unique_lock<std::shared_mutex> lock(playerStatesMutex);
     playerStates[guid] = std::move(state);
@@ -111,14 +120,14 @@ bool Transmog::IsBackpackUnlocked(ObjectGuid guid, uint32 id) const
 {
     std::shared_lock<std::shared_mutex> lock(playerStatesMutex);
     auto it = playerStates.find(guid);
-    return it != playerStates.end() && it->second.unlocked.contains(id);
+    return it != playerStates.end() && it->second->unlocked.contains(id);
 }
 
 uint32 Transmog::GetChosenBackpack(ObjectGuid guid) const
 {
     std::shared_lock<std::shared_mutex> lock(playerStatesMutex);
     auto it = playerStates.find(guid);
-    return it == playerStates.end() ? 0 : it->second.chosen;
+    return it == playerStates.end() ? 0 : it->second->chosen;
 }
 
 bool Transmog::UnlockBackpack(Player* player, uint32 id, bool announce)
@@ -131,7 +140,7 @@ bool Transmog::UnlockBackpack(Player* player, uint32 id, bool announce)
     {
         std::unique_lock<std::shared_mutex> lock(playerStatesMutex);
         auto it = playerStates.find(guid);
-        if (it == playerStates.end() || !it->second.unlocked.insert(id).second)
+        if (it == playerStates.end() || !it->second->unlocked.insert(id).second)
             return false;
     }
 
@@ -177,9 +186,9 @@ TransmogApplyResult Transmog::ApplyBackpack(Player* player, uint32 id)
         auto it = playerStates.find(guid);
         if (it == playerStates.end())
             return TransmogApplyResult::InvalidAppearance;
-        if (it->second.chosen == id)
+        if (it->second->chosen == id)
             return TransmogApplyResult::AlreadyApplied;
-        it->second.chosen = id;
+        it->second->chosen = id;
     }
 
     if (id)
@@ -191,11 +200,20 @@ TransmogApplyResult Transmog::ApplyBackpack(Player* player, uint32 id)
     return TransmogApplyResult::Success;
 }
 
-// Backpacks stay off in shapeshift forms (druid forms, Ghost Wolf), whose models have no
-// sensible back attachment, and while dead.
+// Backpacks stay off while dead and in forms that swap the model (druid forms, Ghost Wolf,
+// Metamorphosis), whose models have no sensible back attachment. Warrior stances, Stealth and
+// Shadowform are shapeshift forms too, but keep the character's own model.
 bool Transmog::CanShowBackpack(Player const* player) const
 {
-    return player->IsAlive() && player->GetShapeshiftForm() == FORM_NONE;
+    if (!player->IsAlive())
+        return false;
+
+    ShapeshiftForm form = player->GetShapeshiftForm();
+    if (form == FORM_NONE)
+        return true;
+
+    SpellShapeshiftFormEntry const* entry = sSpellShapeshiftFormStore.LookupEntry(form);
+    return entry && !entry->modelID_A && !entry->modelID_H;
 }
 
 // Puts the backpack aura in line with the choice, then refreshes the cloak slot so it hides or
@@ -222,8 +240,16 @@ void Transmog::ShowBackpack(Player* player)
         changed = true;
     }
 
-    if (changed && BackpacksHideCloak)
-        RefreshSlot(player, EQUIPMENT_SLOT_BACK);
+    // Refresh the cloak whenever what it shows disagrees with the backpack, not only after this
+    // function changed the aura: death, a saved aura from an older build, or anything else that
+    // adds or removes the aura behind our back. A cloak hidden by us shows entry 0; transmog's own
+    // "Hidden Back" uses HIDDEN_ITEM_ID.
+    if (player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_BACK))
+    {
+        bool cloakHidden = player->GetUInt32Value(GetVisibleItemIndex(EQUIPMENT_SLOT_BACK)) == 0;
+        if (changed || cloakHidden != (BackpacksHideCloak && IsBackpackShown(player)))
+            RefreshSlot(player, EQUIPMENT_SLOT_BACK);
+    }
 }
 
 bool Transmog::IsBackpackShown(Player const* player) const
@@ -237,29 +263,24 @@ bool Transmog::IsBackpackShown(Player const* player) const
 
 void Transmog::MarkBackpackDirty(ObjectGuid guid)
 {
-    std::unique_lock<std::shared_mutex> lock(playerStatesMutex);
+    std::shared_lock<std::shared_mutex> lock(playerStatesMutex);
     if (auto it = playerStates.find(guid); it != playerStates.end())
-        it->second.dirty = true;
+        it->second->dirty = true;
 }
 
 void Transmog::UpdateBackpack(Player* player, uint32 diff)
 {
-    // Runs for every player on the map update threads: bots and other untracked players leave
-    // after a shared lookup, so only tracked players ever take the write lock.
+    // Runs for every player on the map update threads, under the shared lock only: each
+    // player's timer is touched by its own map thread, and the flags are atomic.
     {
         std::shared_lock<std::shared_mutex> lock(playerStatesMutex);
-        if (!playerStates.contains(player->GetGUID()))
-            return;
-    }
-    {
-        std::unique_lock<std::shared_mutex> lock(playerStatesMutex);
         auto it = playerStates.find(player->GetGUID());
         if (it == playerStates.end())
             return;
 
-        BackpackPlayerState& state = it->second;
-        state.timer += diff;
-        if (!state.dirty && state.timer < RECONCILE_MS)
+        BackpackPlayerState& state = *it->second;
+        uint32 elapsed = state.timer.fetch_add(diff) + diff;
+        if (!state.dirty.load() && elapsed < RECONCILE_MS)
             return;
         state.timer = 0;
         state.dirty = false;
@@ -293,7 +314,7 @@ void Transmog::SendBackpackIntroMail(Player* player)
     item->SaveToDB(trans); // must be in the DB before the mail references it
     draft.AddItem(item);
     MailSender sender(MAIL_CREATURE, BackpackMailSender, MAIL_STATIONERY_GM);
-    draft.SendMailTo(trans, MailReceiver(player, low), sender, MAIL_CHECK_MASK_NONE);
+    draft.SendMailTo(trans, MailReceiver(player, low), sender, MAIL_CHECK_MASK_NONE, 0, MAIL_EXPIRE_DAYS);
     trans->Append("REPLACE INTO mod_transmog_plus_backpack_mail (Owner) VALUES ({})", low);
     CharacterDatabase.CommitTransaction(trans);
 }
@@ -325,6 +346,9 @@ public:
         sTransmog->SyncPhaseUnlocks(player, false);
         sTransmog->SendBackpackIntroMail(player);
         sTransmog->ShowBackpack(player);
+        // The slots were filled before this state existed (inventory load, then
+        // TransmogPlayerScript's login refresh), so show the cloak the way the backpack wants it.
+        sTransmog->RefreshSlot(player, EQUIPMENT_SLOT_BACK);
     }
 
     void OnPlayerLogout(Player* player) override
@@ -341,7 +365,7 @@ public:
 
     void OnPlayerUpdate(Player* player, uint32 diff) override
     {
-        if (sTransmog->Enable && sTransmog->BackpacksEnable)
+        if (sTransmog->Enable && sTransmog->BackpacksEnable && !Transmog_IsBotSession(player))
             sTransmog->UpdateBackpack(player, diff);
     }
 
@@ -358,7 +382,8 @@ public:
 
     void OnPlayerResurrect(Player* player, float, bool&) override
     {
-        sTransmog->MarkBackpackDirty(player->GetGUID());
+        if (!Transmog_IsBotSession(player))
+            sTransmog->MarkBackpackDirty(player->GetGUID());
     }
 };
 
@@ -373,8 +398,10 @@ public:
 
     void OnUnitSetShapeshiftForm(Unit* unit, uint8) override
     {
-        if (unit && unit->IsPlayer() && sTransmog->BackpacksEnable)
-            sTransmog->MarkBackpackDirty(unit->GetGUID());
+        // Bots switch forms constantly and never wear backpacks.
+        Player* player = unit ? unit->ToPlayer() : nullptr;
+        if (player && sTransmog->BackpacksEnable && !Transmog_IsBotSession(player))
+            sTransmog->MarkBackpackDirty(player->GetGUID());
     }
 };
 
@@ -386,20 +413,30 @@ public:
 
     bool OnUse(Player* player, Item* item, SpellCastTargets const&) override
     {
+        // Every "handled, nothing cast" return sends an equip error so the client un-greys the item.
         Transmog::BackpackEntry const* entry = sTransmog->GetBackpackByItem(item->GetEntry());
         if (!sTransmog->Enable || !sTransmog->BackpacksEnable || !entry)
         {
             ChatHandler(player->GetSession()).SendSysMessage(Tstr(player->GetSession(), LANG_TRANSMOG_BACKPACK_DISABLED));
+            player->SendEquipError(EQUIP_ERR_NONE, item, nullptr);
             return true;
         }
 
         if (sTransmog->IsBackpackUnlocked(player->GetGUID(), entry->id))
         {
             ChatHandler(player->GetSession()).PSendSysMessage("|cffff80ff[{}]|r {}", entry->name, Tstr(player->GetSession(), LANG_TRANSMOG_BACKPACK_KNOWN));
+            player->SendEquipError(EQUIP_ERR_NONE, item, nullptr);
             return true;
         }
 
-        sTransmog->UnlockBackpack(player, entry->id, true);
+        // Fails for characters without backpack state (bots): keep the item then.
+        if (!sTransmog->UnlockBackpack(player, entry->id, true))
+        {
+            ChatHandler(player->GetSession()).SendSysMessage(Tstr(player->GetSession(), LANG_TRANSMOG_BACKPACK_DISABLED));
+            player->SendEquipError(EQUIP_ERR_NONE, item, nullptr);
+            return true;
+        }
+
         sTransmog->ApplyBackpack(player, entry->id);
         TransmogAddon::SendBackpackStatus(player);
         player->DestroyItemCount(item->GetEntry(), 1, true);
