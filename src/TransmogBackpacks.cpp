@@ -200,12 +200,16 @@ TransmogApplyResult Transmog::ApplyBackpack(Player* player, uint32 id)
     return TransmogApplyResult::Success;
 }
 
-// Backpacks stay off while dead and in forms that swap the model (druid forms, Ghost Wolf,
-// Metamorphosis), whose models have no sensible back attachment. Warrior stances, Stealth and
+// Backpacks stay off while dead, transformed, and in forms that swap the model (druid forms,
+// Ghost Wolf, Metamorphosis), whose models have no sensible back attachment. Warrior stances, Stealth and
 // Shadowform are shapeshift forms too, but keep the character's own model.
 bool Transmog::CanShowBackpack(Player const* player) const
 {
     if (!player->IsAlive())
+        return false;
+
+    // Transforms (Polymorph, Hex, costumes) swap the model without a shapeshift form.
+    if (player->GetDisplayId() != player->GetNativeDisplayId())
         return false;
 
     ShapeshiftForm form = player->GetShapeshiftForm();
@@ -280,10 +284,10 @@ void Transmog::UpdateBackpack(Player* player, uint32 diff)
 
         BackpackPlayerState& state = *it->second;
         uint32 elapsed = state.timer.fetch_add(diff) + diff;
-        if (!state.dirty.load() && elapsed < RECONCILE_MS)
+        bool dirty = state.dirty.exchange(false);
+        if (!dirty && elapsed < RECONCILE_MS)
             return;
         state.timer = 0;
-        state.dirty = false;
     }
     ShowBackpack(player);
 }
