@@ -46,7 +46,12 @@ function Transmog:PreviewFormLook(preview)
         end
         return
     end
-    self:ShowPreview(model, { creature = preview })
+    -- If the look never loads, show the character again rather than an empty frame.
+    self:ShowPreview(model, { creature = preview }, nil, false, function()
+        self:ForgetPreview(model)
+        model:SetUnit("player")
+        self:RefreshPreviewModel()
+    end)
 end
 
 function Transmog:ChosenFormPreview()
