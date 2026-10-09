@@ -1,5 +1,5 @@
 -- Removes the druid form looks. Run by hand (the server never applies data/sql/uninstall), on
--- acore_world and acore_characters as marked. Players can keep patch-I: unused displays do nothing.
+-- acore_world and acore_characters as marked. Players can keep patch-R: unused displays do nothing.
 
 -- acore_world
 DROP TABLE IF EXISTS `mod_transmog_plus_forms`;

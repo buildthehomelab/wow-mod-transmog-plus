@@ -41,7 +41,7 @@ it collects appearances the retail way (see below) and ships a migration from mo
   The classic looks are there from the start; each individual progression phase cleared unlocks
   the next batch, through the Ruby Sanctum. A look goes on whenever the form's normal model
   would, so transforms (costumes, Polymorph) still win. It needs the realm's client patch
-  (patch-I, built with
+  (patch-R, built with
   [wow-mod-retail-druid-forms](https://github.com/buildthehomelab/wow-mod-retail-druid-forms));
   the list is the world table `mod_transmog_plus_forms`, previewed through creatures
   9501000-9501499 (`Transmog.Forms.Enable`).
