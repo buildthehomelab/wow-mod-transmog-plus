@@ -56,10 +56,8 @@ end
 -- The tiles are shared with the other tabs: give them their model back.
 function Transmog:LeaveBackpacksView()
     self:SetBackpacksTabActive(false)
-    for i, frame in pairs(self.ItemButtons) do
-        if frame.backpackIcon then
-            frame.backpackIcon:Hide()
-        end
+    self:HideTilePreviews()
+    for i in pairs(self.ItemButtons) do
         local model = getglobal('TransmogLook' .. i .. 'ItemModel')
         if model then
             model:Show()
@@ -193,23 +191,28 @@ function Transmog:RenderBackpacks()
             AddButtonOnEnterTextTooltip(button, "|cffff80ff" .. entry.name, hint)
 
             getglobal('TransmogLook' .. itemIndex .. 'ItemModel'):Hide()
-            if not frame.backpackIcon then
-                -- Above the tile's opaque button background (a texture on the tile itself draws under it).
-                local layer = CreateFrame("Frame", nil, frame)
-                layer:SetAllPoints(button)
-                layer:SetFrameLevel(button:GetFrameLevel() + 2)
-                layer:EnableMouse(false)
-                frame.backpackIcon = layer:CreateTexture(nil, "OVERLAY")
-                frame.backpackIcon:SetWidth(56)
-                frame.backpackIcon:SetHeight(56)
-                frame.backpackIcon:SetPoint("CENTER", button, "CENTER", 0, 4)
+            -- The backpack's own model; its icon for "No backpack", or if the model won't load.
+            local model, icon = self:TilePreview(frame, button)
+            local function showIcon()
+                if not icon:SetTexture(entry.icon or (ICON_DIR .. entry.id)) then
+                    icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+                end
+                icon:SetDesaturated(not entry.unlocked)
+                icon:SetVertexColor(entry.unlocked and 1 or 0.5, entry.unlocked and 1 or 0.5, entry.unlocked and 1 or 0.5)
+                icon:Show()
             end
-            if not frame.backpackIcon:SetTexture(entry.icon or (ICON_DIR .. entry.id)) then
-                frame.backpackIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+            if entry.id == 0 or not entry.model or entry.model == "" then
+                self:ForgetPreview(model)
+                model:Hide()
+                showIcon()
+            else
+                icon:Hide()
+                model:Show()
+                self:ShowPreview(model, { file = entry.model }, 'backpacks', not entry.unlocked, function()
+                    model:Hide()
+                    showIcon()
+                end)
             end
-            frame.backpackIcon:SetDesaturated(not entry.unlocked)
-            frame.backpackIcon:SetVertexColor(entry.unlocked and 1 or 0.5, entry.unlocked and 1 or 0.5, entry.unlocked and 1 or 0.5)
-            frame.backpackIcon:Show()
 
             frame:Show()
 

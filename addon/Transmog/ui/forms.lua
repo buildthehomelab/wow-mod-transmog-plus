@@ -15,10 +15,6 @@ local FORMS = {
     { key = "tree",    name = "Tree of Life",  icon = "Interface\\Icons\\Ability_Druid_TreeofLife" },
 }
 
-local LIGHT = { 1, 0, 0, -0.707, -0.707, 0.7, 1.0, 1.0, 1.0, 0.8, 1.0, 1.0, 0.8 }
-local DARK = { 1, 0, 0, -0.707, -0.707, 0, 0, 0, 0, 0, 0, 0, 0 }
-local REQUERY_DELAY = 0.8 -- a creature the client hasn't seen yet shows once its query returns
-
 Transmog.formKey = "bear"
 
 local function formInfo(key)
@@ -37,60 +33,20 @@ function Transmog:FormUnlockHint(entry)
     return "Available from the start."
 end
 
--- Re-sets models whose creature wasn't cached when first shown.
-local requery = CreateFrame("Frame")
-requery:Hide()
-requery.pending = {}
-requery:SetScript("OnUpdate", function(self, elapsed)
-    self.wait = (self.wait or 0) - elapsed
-    if self.wait > 0 then
-        return
-    end
-    for model, entry in pairs(self.pending) do
-        if (model.creature == entry or model.formCreature == entry) and model:IsVisible() then
-            model:SetCreature(entry)
-            if model.creature == entry then
-                model:SetLight(unpack(model.locked and DARK or LIGHT))
-            end
-        end
-    end
-    self.pending = {}
-    self:Hide()
-end)
-
-local function showCreature(model, entry, locked)
-    model.locked = locked
-    if model.creature ~= entry then
-        model.creature = entry
-        model:SetCreature(entry)
-        requery.pending[model] = entry
-        requery.wait = REQUERY_DELAY
-        requery:Show()
-    end
-    model:SetFacing(0.6)
-    model:SetLight(unpack(locked and DARK or LIGHT))
-end
-
 -- The big character model on the left shows a look like the barber shop does: the chosen one,
 -- or the hovered tile. 0 (the default look) shows the character as it is.
 function Transmog:PreviewFormLook(preview)
     local model = TransmogFramePlayerModel
     self.formPreviewing = true
     if not preview or preview == 0 then
-        if model.formCreature then
-            model.formCreature = nil
+        if model.wantKey then
+            self:ForgetPreview(model)
             model:SetUnit("player")
             self:RefreshPreviewModel()
         end
         return
     end
-    if model.formCreature ~= preview then
-        model.formCreature = preview
-        model:SetCreature(preview)
-        requery.pending[model] = preview
-        requery.wait = REQUERY_DELAY
-        requery:Show()
-    end
+    self:ShowPreview(model, { creature = preview })
 end
 
 function Transmog:ChosenFormPreview()
@@ -173,8 +129,8 @@ function Transmog:LeaveFormsView()
     self:SetFormsTabActive(false)
     if self.formPreviewing then
         self.formPreviewing = false
-        if TransmogFramePlayerModel.formCreature then
-            TransmogFramePlayerModel.formCreature = nil
+        if TransmogFramePlayerModel.wantKey then
+            self:ForgetPreview(TransmogFramePlayerModel)
             TransmogFramePlayerModel:SetUnit("player")
             self:RefreshPreviewModel()
         end
@@ -182,13 +138,8 @@ function Transmog:LeaveFormsView()
     if self.formPicker then
         self.formPicker:Hide()
     end
-    for i, frame in pairs(self.ItemButtons) do
-        if frame.formModel then
-            frame.formModel:Hide()
-        end
-        if frame.formIcon then
-            frame.formIcon:Hide()
-        end
+    self:HideTilePreviews()
+    for i in pairs(self.ItemButtons) do
         local model = getglobal('TransmogLook' .. i .. 'ItemModel')
         if model then
             model:Show()
@@ -347,33 +298,19 @@ function Transmog:RenderForms()
             end)
 
             getglobal('TransmogLook' .. itemIndex .. 'ItemModel'):Hide()
-            if not frame.formModel then
-                -- The tile's button has an opaque background: the preview and the icon live on a
-                -- layer above it (no mouse, so clicks and tooltips still reach the button).
-                local layer = CreateFrame("Frame", nil, frame)
-                layer:SetAllPoints(button)
-                layer:SetFrameLevel(button:GetFrameLevel() + 2)
-                layer:EnableMouse(false)
-                frame.formModel = CreateFrame("PlayerModel", nil, layer)
-                frame.formModel:SetWidth(76)
-                frame.formModel:SetHeight(96)
-                frame.formModel:SetPoint("CENTER", button, "CENTER", 0, 0)
-                frame.formModel:SetFrameLevel(layer:GetFrameLevel() + 1)
-                frame.formModel:EnableMouse(false)
-                frame.formIcon = layer:CreateTexture(nil, "OVERLAY")
-                frame.formIcon:SetWidth(48)
-                frame.formIcon:SetHeight(48)
-                frame.formIcon:SetPoint("CENTER", button, "CENTER", 0, 4)
-            end
+            local model, icon = self:TilePreview(frame, button)
             if entry.id == 0 or not entry.preview or entry.preview == 0 then
-                frame.formModel:Hide()
-                frame.formModel.creature = nil
-                frame.formIcon:SetTexture(entry.icon or info.icon)
-                frame.formIcon:Show()
+                self:ForgetPreview(model)
+                model:Hide()
+                icon:SetTexture(entry.icon or info.icon)
+                icon:Show()
             else
-                frame.formIcon:Hide()
-                frame.formModel:Show()
-                showCreature(frame.formModel, entry.preview, not entry.unlocked)
+                icon:Hide()
+                model:Show()
+                self:ShowPreview(model, { creature = entry.preview }, 'forms', not entry.unlocked, function()
+                    icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+                    icon:Show()
+                end)
             end
 
             frame:Show()

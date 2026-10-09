@@ -512,6 +512,12 @@ namespace TransmogAddon
         if (!sTransmog->FormsEnable || player->getClass() != CLASS_DRUID)
             return;
 
+        // The tiles preview each look through a creature, and a 3.3.5 model frame only shows a
+        // creature the client already has cached: send them all first (query responses).
+        for (Transmog::FormEntry const& entry : sTransmog->forms)
+            if (CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(entry.previewCreature))
+                player->GetSession()->SendPacket(&creature->queryData);
+
         SendToClient(player, "Forms:start:" + std::to_string(sTransmog->GetProgressionPhase(player)));
         for (Transmog::FormEntry const& entry : sTransmog->forms)
         {
