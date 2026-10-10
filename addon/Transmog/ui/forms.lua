@@ -3,7 +3,7 @@ local Transmog = _G.Transmog
 -- Forms: druid shapeshift looks, one choice per form, like the retail barber shop. The server
 -- sends every look (Form:<display>:<unlocked>:<phase>:<form>:<preview creature>:<name>) and the
 -- current choice per form. Tiles preview each look through a creature that uses its display
--- (3.3.5 model frames can't show a display id); locked looks show as a silhouette.
+-- (3.3.5 model frames can't show a display id); locked looks show dimmed, with a padlock.
 -- Shamans get the same tab as Totems: one look per totem element in place of the forms.
 
 local DRUID_FORMS = {
@@ -229,7 +229,7 @@ function Transmog:TryForm(id)
     self:aSend("ApplyForm:" .. key .. ":" .. id)
 end
 
--- "Default look", then every look for the picked form; locked ones as silhouettes.
+-- "Default look", then every look for the picked form; locked ones dimmed.
 function Transmog:RenderForms()
     self:hideItems(true)
     self:hideItemBorders()
