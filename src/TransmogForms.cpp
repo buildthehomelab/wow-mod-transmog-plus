@@ -95,8 +95,8 @@ bool Transmog::HasFormLooks(Player const* player) const
 {
     switch (player->getClass())
     {
-        case CLASS_DRUID:  return FormsEnable;
-        case CLASS_SHAMAN: return TotemsEnable;
+        case CLASS_DRUID:  return FormsEnable && hasDruidLooks;
+        case CLASS_SHAMAN: return TotemsEnable && hasTotemLooks;
         default:           return false;
     }
 }
@@ -104,12 +104,16 @@ bool Transmog::HasFormLooks(Player const* player) const
 void Transmog::LoadForms()
 {
     forms.clear();
+    hasDruidLooks = hasTotemLooks = false;
     if (!FormsEnable && !TotemsEnable)
         return;
 
     QueryResult result = WorldDatabase.Query("SELECT DisplayId, Form, Name, UnlockPhase, PreviewCreature FROM mod_transmog_plus_forms ORDER BY SortOrder, DisplayId");
     if (!result)
+    {
+        LOG_INFO("module", "mod-transmog-plus: no druid form or shaman totem looks (no look pack installed)");
         return;
+    }
 
     do
     {
@@ -128,10 +132,12 @@ void Transmog::LoadForms()
         }
         if (!(FormKindClass(entry.kind) == CLASS_SHAMAN ? TotemsEnable : FormsEnable))
             continue;
+        (FormKindClass(entry.kind) == CLASS_SHAMAN ? hasTotemLooks : hasDruidLooks) = true;
         forms.push_back(std::move(entry));
     } while (result->NextRow());
 
-    LOG_INFO("module", "mod-transmog-plus: {} druid form and shaman totem looks loaded", forms.size());
+    LOG_INFO("module", "mod-transmog-plus: {} druid form and shaman totem looks loaded (druid forms: {}, shaman totems: {})",
+        forms.size(), hasDruidLooks ? "yes" : "no pack", hasTotemLooks ? "yes" : "no pack");
 }
 
 Transmog::FormEntry const* Transmog::GetForm(uint32 displayId) const

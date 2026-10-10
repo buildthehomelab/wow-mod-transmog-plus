@@ -35,26 +35,29 @@ it collects appearances the retail way (see below) and ships a migration from mo
   needs the realm's client patch, which carries the models and spells 90170-90178 (built with
   [wow-mod-visible-bags](https://github.com/buildthehomelab/wow-mod-visible-bags)); the list
   is the world table `mod_transmog_plus_backpacks` (`Transmog.Backpacks.*`).
-- Druid forms: druids pick a look for each shapeshift form from the Forms tab, like retail's
-  barber shop. There are 265 retail form looks: the remade bear and cat colours of every druid
-  race, the Legion artifact forms, Dreamsabers, Bristlebruins, stags, owls, Batbears and more.
-  The classic looks are there from the start; each individual progression phase cleared unlocks
-  the next batch, through the Ruby Sanctum. A look goes on whenever the form's normal model
-  would, so transforms (costumes, Polymorph) still win. It needs the realm's client patch
-  (patch-R, built with
-  [wow-mod-retail-druid-forms](https://github.com/buildthehomelab/wow-mod-retail-druid-forms));
-  the list is the world table `mod_transmog_plus_forms`, previewed through creatures
-  9501000-9501499 (`Transmog.Forms.Enable`).
-- Shaman totems: shamans pick a look for each totem element (fire, earth, water, air) from the
-  Totems tab, which takes the Forms tab's place for them. There are 80 looks: the totems of the
-  five races the client already has (Tauren, Orc, Troll, Dwarf, Draenei), free for every shaman
-  from the start, and 15 retail sets (Dark Iron, Goblin, Zandalari, Vulpera, Pandaren,
-  Highmountain, Mag'har, Kul Tiran, Haranir, Earthen and more), one per individual progression
-  phase cleared, like the druid forms. The look goes on when the totem is summoned, and everyone
-  sees it. The retail sets need the realm's client patch (patch-V, built with the same
-  [wow-mod-retail-druid-forms](https://github.com/buildthehomelab/wow-mod-retail-druid-forms)
-  tools); the looks share the druid forms' table, with previews through creatures
-  9501500-9501999 (`Transmog.Totems.Enable`).
+- Druid forms (optional, with a look pack): druids pick a look for each shapeshift form from
+  the Forms tab, like retail's barber shop. The classic looks are there from the start; each
+  individual progression phase cleared unlocks the next batch. A look goes on whenever the
+  form's normal model would, so transforms (costumes, Polymorph) still win
+  (`Transmog.Forms.Enable`).
+- Shaman totems (optional, with a look pack): shamans pick a look for each totem element (fire,
+  earth, water, air) from the Totems tab, which takes the Forms tab's place for them. The look
+  goes on when the totem is summoned, and everyone sees it (`Transmog.Totems.Enable`).
+- Look packs: this module has the Forms and Totems tabs but ships no looks. They come from
+  packs, each a small module of its own with its world SQL and a client patch, installed next
+  to this one:
+
+  | Pack | Looks | Client patch |
+  |---|---|---|
+  | [wow-mod-retail-druid-forms](https://github.com/buildthehomelab/wow-mod-retail-druid-forms) | 265 retail druid form looks | patch-R |
+  | [wow-mod-retail-shaman-totems](https://github.com/buildthehomelab/wow-mod-retail-shaman-totems) | 80 totem looks: the client's five race sets and 15 retail sets | patch-V |
+
+  A pack fills the world table `mod_transmog_plus_forms`. A class with no looks in it gets no
+  tab, so a realm without packs is plain transmog, with nothing else to switch off. The packs
+  are built with [wow-mod-retail-creatures](https://github.com/buildthehomelab/wow-mod-retail-creatures).
+  Upgrading from a version that shipped the looks itself: the rows stay in your database and
+  keep working; install the packs to keep them up to date, or run the packs' uninstall SQL to
+  drop them.
 - Outfits are saved on the server for the whole account. Each character's old outfits are
   uploaded the first time it opens the window.
 - Transmog Sets browser in the addon.

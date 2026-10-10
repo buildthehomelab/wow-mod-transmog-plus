@@ -285,11 +285,13 @@ Transmog.Backpacks.Mail.Subject = "Something for your back"
 #
 #    Transmog.Forms.Enable
 #        Description: Druids pick a look for each shapeshift form (bear, cat, travel, aquatic,
-#                     flight, moonkin, tree) from the Forms tab: retail form models from the
-#                     realm's client patch (patch-R). Looks unlock per individual progression
-#                     phase cleared (the phase quests are Transmog.Backpacks.PhaseQuestBase + n).
-#                     The list is the world table mod_transmog_plus_forms.
-#        Default:     1 - (Enabled)
+#                     flight, moonkin, tree) from the Forms tab. The looks come from a look pack,
+#                     a module of its own with its client patch (mod-retail-druid-forms, patch-R):
+#                     without one installed there are no looks and no Forms tab, whatever this
+#                     says. Looks unlock per individual progression phase cleared (the phase
+#                     quests are Transmog.Backpacks.PhaseQuestBase + n). The list is the world
+#                     table mod_transmog_plus_forms.
+#        Default:     1 - (Enabled when a pack is installed)
 #                     0 - (Disabled)
 #
 
@@ -300,11 +302,13 @@ Transmog.Forms.Enable = 1
 #
 #    Transmog.Totems.Enable
 #        Description: Shamans pick a look for each totem element (fire, earth, water, air) from
-#                     the Totems tab: the client's own race totems, and retail totem models from
-#                     the realm's client patch (patch-V). Looks unlock per individual progression
-#                     phase cleared, like the druid forms, and share their table
+#                     the Totems tab: the client's own race totems, and retail totem models. The
+#                     looks come from a look pack, a module of its own with its client patch
+#                     (mod-retail-shaman-totems, patch-V): without one installed there are no
+#                     looks and no Totems tab, whatever this says. Looks unlock per individual
+#                     progression phase cleared, like the druid forms, and share their table
 #                     (mod_transmog_plus_forms).
-#        Default:     1 - (Enabled)
+#        Default:     1 - (Enabled when a pack is installed)
 #                     0 - (Disabled)
 #
 

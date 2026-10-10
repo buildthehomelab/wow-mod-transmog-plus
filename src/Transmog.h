@@ -178,11 +178,15 @@ public:
     void UpdateBackpack(Player* player, uint32 diff);
     void SendBackpackIntroMail(Player* player);
 
-    // Druid form looks and shaman totem looks (TransmogForms.cpp): retail models from the realm's
-    // client patches, one choice per form or totem element, unlocked by individual progression
-    // phase. A totem element is a form kind like any other; only how the look goes on differs.
+    // Druid form looks and shaman totem looks (TransmogForms.cpp): one choice per form or totem
+    // element, unlocked by individual progression phase. A totem element is a form kind like any
+    // other; only how the look goes on differs. The looks themselves come from look packs, modules
+    // of their own (mod-retail-druid-forms, mod-retail-shaman-totems) that fill
+    // mod_transmog_plus_forms: without a class's pack there is nothing to pick and no tab.
     bool FormsEnable;
     bool TotemsEnable;
+    bool hasDruidLooks = false;
+    bool hasTotemLooks = false;
 
     // Stored in mod_transmog_plus_form_choice: add new kinds at the end.
     enum FormKind : uint8
@@ -209,7 +213,7 @@ public:
     static FormKind FormKindOfTotemSlot(uint32 slot);
     // The class that owns a kind: druids the forms, shamans the totems.
     static uint8 FormKindClass(FormKind kind);
-    // The player's class has looks to pick, and they're switched on.
+    // The player's class has looks to pick (its pack is installed), and they're switched on.
     bool HasFormLooks(Player const* player) const;
     void LoadForms();
     FormEntry const* GetForm(uint32 displayId) const;
