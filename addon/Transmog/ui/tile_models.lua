@@ -5,9 +5,10 @@ local Transmog = _G.Transmog
 -- file in the background, so a preview is re-set until the frame reports a model (GetModel),
 -- then framed. The model sits on a layer above the tile's button: the button's background is
 -- opaque, and anything on the tile frame itself draws under it.
+-- A locked look keeps its colours under a dim light, with a padlock in the tile's corner.
 
 local LIGHT = { 1, 0, 0, -0.707, -0.707, 0.7, 1.0, 1.0, 1.0, 0.8, 1.0, 1.0, 0.8 }
-local DARK = { 1, 0, 0, -0.707, -0.707, 0, 0, 0, 0, 0, 0, 0, 0 }
+local DIM = { 1, 0, 0, -0.707, -0.707, 0.3, 1.0, 1.0, 1.0, 0.3, 1.0, 1.0, 0.8 }
 local RETRY_EVERY = 0.4
 local MAX_TRIES = 30 -- 12 seconds
 
@@ -31,7 +32,7 @@ local function frameModel(model)
     end
     model:SetFacing(model.facing or 0.6)
     if model.cameraKey then
-        model:SetLight(unpack(model.locked and DARK or LIGHT))
+        model:SetLight(unpack(model.locked and DIM or LIGHT))
     end
 end
 
@@ -92,6 +93,13 @@ function Transmog:ShowPreview(model, want, cameraKey, locked, onFail)
     model.cameraKey = cameraKey
     model.locked = locked
     model.onFail = onFail
+    if model.lock then
+        if locked then
+            model.lock:Show()
+        else
+            model.lock:Hide()
+        end
+    end
     if model.wantKey ~= key then
         model.wantKey = key
         model.want = want
@@ -111,9 +119,13 @@ function Transmog:ForgetPreview(model)
     model.want = nil
     model.wantKey = nil
     loader.pending[model] = nil
+    if model.lock then
+        model.lock:Hide()
+    end
 end
 
--- The preview layer of a tile: a model and an icon above its button.
+-- The preview layer of a tile: a model and an icon above its button, and a padlock above the
+-- model for a locked look.
 function Transmog:TilePreview(frame, button)
     if not frame.tileModel then
         local layer = CreateFrame("Frame", nil, frame)
@@ -130,6 +142,17 @@ function Transmog:TilePreview(frame, button)
         icon:SetWidth(48)
         icon:SetHeight(48)
         icon:SetPoint("CENTER", button, "CENTER", 0, 4)
+        local lockLayer = CreateFrame("Frame", nil, layer)
+        lockLayer:SetAllPoints(button)
+        lockLayer:SetFrameLevel(model:GetFrameLevel() + 1)
+        lockLayer:EnableMouse(false)
+        model.lock = lockLayer:CreateTexture(nil, "OVERLAY")
+        model.lock:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-LOCK")
+        model.lock:SetTexCoord(0, 0.71875, 0, 0.875)
+        model.lock:SetWidth(12)
+        model.lock:SetHeight(14)
+        model.lock:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -8, 10)
+        model.lock:Hide()
         frame.tileModel, frame.tileIcon = model, icon
     end
     return frame.tileModel, frame.tileIcon
