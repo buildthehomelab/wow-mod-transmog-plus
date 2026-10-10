@@ -77,7 +77,8 @@ enum TransmogString : uint32
     LANG_TRANSMOG_BACKPACK_ADDED,
     LANG_TRANSMOG_BACKPACK_KNOWN,
     LANG_TRANSMOG_BACKPACK_DISABLED,
-    LANG_TRANSMOG_FORMS_UNLOCKED
+    LANG_TRANSMOG_FORMS_UNLOCKED,
+    LANG_TRANSMOG_TOTEMS_UNLOCKED
 };
 
 inline std::string const& Tstr(WorldSession* session, uint32 id)
@@ -177,14 +178,19 @@ public:
     void UpdateBackpack(Player* player, uint32 diff);
     void SendBackpackIntroMail(Player* player);
 
-    // Druid form looks (TransmogForms.cpp): retail form models from the realm's client patch,
-    // one choice per form, unlocked by individual progression phase.
+    // Druid form looks and shaman totem looks (TransmogForms.cpp): retail models from the realm's
+    // client patches, one choice per form or totem element, unlocked by individual progression
+    // phase. A totem element is a form kind like any other; only how the look goes on differs.
     bool FormsEnable;
+    bool TotemsEnable;
 
+    // Stored in mod_transmog_plus_form_choice: add new kinds at the end.
     enum FormKind : uint8
     {
         FORM_KIND_BEAR, FORM_KIND_CAT, FORM_KIND_TRAVEL, FORM_KIND_AQUATIC, FORM_KIND_FLIGHT,
-        FORM_KIND_MOONKIN, FORM_KIND_TREE, FORM_KIND_COUNT, FORM_KIND_NONE = FORM_KIND_COUNT
+        FORM_KIND_MOONKIN, FORM_KIND_TREE,
+        FORM_KIND_TOTEM_FIRE, FORM_KIND_TOTEM_EARTH, FORM_KIND_TOTEM_WATER, FORM_KIND_TOTEM_AIR,
+        FORM_KIND_COUNT, FORM_KIND_NONE = FORM_KIND_COUNT
     };
     struct FormEntry
     {
@@ -200,6 +206,11 @@ public:
     static char const* FormKindName(FormKind kind);
     static FormKind FormKindByName(std::string const& name);
     static FormKind FormKindOf(ShapeshiftForm form);
+    static FormKind FormKindOfTotemSlot(uint32 slot);
+    // The class that owns a kind: druids the forms, shamans the totems.
+    static uint8 FormKindClass(FormKind kind);
+    // The player's class has looks to pick, and they're switched on.
+    bool HasFormLooks(Player const* player) const;
     void LoadForms();
     FormEntry const* GetForm(uint32 displayId) const;
     void LoadPlayerForms(ObjectGuid guid);
@@ -209,6 +220,7 @@ public:
     // displayId 0 goes back to the default look.
     TransmogApplyResult ApplyForm(Player* player, FormKind kind, uint32 displayId);
     void ApplyFormLook(Player* player, uint32 displayId);
+    void ApplyTotemLook(Unit* totem, uint32 displayId);
     void AnnounceFormUnlocks(Player* player, uint8 phase);
 
     // Account appearance data is shared while logged-in characters reference it.

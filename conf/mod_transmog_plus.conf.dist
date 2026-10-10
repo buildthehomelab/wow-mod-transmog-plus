@@ -286,7 +286,7 @@ Transmog.Backpacks.Mail.Subject = "Something for your back"
 #    Transmog.Forms.Enable
 #        Description: Druids pick a look for each shapeshift form (bear, cat, travel, aquatic,
 #                     flight, moonkin, tree) from the Forms tab: retail form models from the
-#                     realm's client patch (patch-I). Looks unlock per individual progression
+#                     realm's client patch (patch-R). Looks unlock per individual progression
 #                     phase cleared (the phase quests are Transmog.Backpacks.PhaseQuestBase + n).
 #                     The list is the world table mod_transmog_plus_forms.
 #        Default:     1 - (Enabled)
@@ -294,5 +294,20 @@ Transmog.Backpacks.Mail.Subject = "Something for your back"
 #
 
 Transmog.Forms.Enable = 1
+
+###################################################################################################
+#    SHAMAN TOTEMS
+#
+#    Transmog.Totems.Enable
+#        Description: Shamans pick a look for each totem element (fire, earth, water, air) from
+#                     the Totems tab: the client's own race totems, and retail totem models from
+#                     the realm's client patch (patch-V). Looks unlock per individual progression
+#                     phase cleared, like the druid forms, and share their table
+#                     (mod_transmog_plus_forms).
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled)
+#
+
+Transmog.Totems.Enable = 1
 
 ###################################################################################################

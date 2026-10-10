@@ -550,7 +550,7 @@ function Transmog_switchTab(to)
         Transmog:ShowBackpacksView()
     elseif to == 'forms' then
         if not Transmog.serverSupportsForms then
-            DEFAULT_CHAT_FRAME:AddMessage("|cffff4444[Transmog]|r Form looks are for druids, on realms that have them.")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff4444[Transmog]|r Form and totem looks are for druids and shamans, on realms that have them.")
             Transmog_switchTab('items')
             return
         end

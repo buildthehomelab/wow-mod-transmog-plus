@@ -45,6 +45,16 @@ it collects appearances the retail way (see below) and ships a migration from mo
   [wow-mod-retail-druid-forms](https://github.com/buildthehomelab/wow-mod-retail-druid-forms));
   the list is the world table `mod_transmog_plus_forms`, previewed through creatures
   9501000-9501499 (`Transmog.Forms.Enable`).
+- Shaman totems: shamans pick a look for each totem element (fire, earth, water, air) from the
+  Totems tab, which takes the Forms tab's place for them. There are 80 looks: the totems of the
+  five races the client already has (Tauren, Orc, Troll, Dwarf, Draenei), free for every shaman
+  from the start, and 15 retail sets (Dark Iron, Goblin, Zandalari, Vulpera, Pandaren,
+  Highmountain, Mag'har, Kul Tiran, Haranir, Earthen and more), one per individual progression
+  phase cleared, like the druid forms. The look goes on when the totem is summoned, and everyone
+  sees it. The retail sets need the realm's client patch (patch-V, built with the same
+  [wow-mod-retail-druid-forms](https://github.com/buildthehomelab/wow-mod-retail-druid-forms)
+  tools); the looks share the druid forms' table, with previews through creatures
+  9501500-9501999 (`Transmog.Totems.Enable`).
 - Outfits are saved on the server for the whole account. Each character's old outfits are
   uploaded the first time it opens the window.
 - Transmog Sets browser in the addon.
