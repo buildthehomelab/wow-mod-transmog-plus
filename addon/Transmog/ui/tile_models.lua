@@ -125,44 +125,63 @@ function Transmog:ForgetPreview(model)
 end
 
 -- The preview layer of a tile: a model and an icon above its button, and a padlock above the
--- model for a locked look.
-function Transmog:TilePreview(frame, button)
-    if not frame.tileModel then
+-- model for a locked look. kind is "creature" (Forms, Totems) or "file" (Backpacks), and each
+-- gets its own model frame: a frame that has shown a creature keeps showing it when it's then
+-- given a model file, so the Backpacks tab drew the totems or forms that tile had last held.
+local function newTileModel(layer, button)
+    local model = CreateFrame("PlayerModel", nil, layer)
+    model:SetWidth(76)
+    model:SetHeight(96)
+    model:SetPoint("CENTER", button, "CENTER", 0, 0)
+    model:SetFrameLevel(layer:GetFrameLevel() + 1)
+    model:EnableMouse(false)
+    local lockLayer = CreateFrame("Frame", nil, layer)
+    lockLayer:SetAllPoints(button)
+    lockLayer:SetFrameLevel(model:GetFrameLevel() + 1)
+    lockLayer:EnableMouse(false)
+    model.lock = lockLayer:CreateTexture(nil, "OVERLAY")
+    model.lock:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-LOCK")
+    model.lock:SetTexCoord(0, 0.71875, 0, 0.875)
+    model.lock:SetWidth(12)
+    model.lock:SetHeight(14)
+    model.lock:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -8, 10)
+    model.lock:Hide()
+    model:Hide()
+    return model
+end
+
+function Transmog:TilePreview(frame, button, kind)
+    if not frame.tileModels then
         local layer = CreateFrame("Frame", nil, frame)
         layer:SetAllPoints(button)
         layer:SetFrameLevel(button:GetFrameLevel() + 2)
         layer:EnableMouse(false)
-        local model = CreateFrame("PlayerModel", nil, layer)
-        model:SetWidth(76)
-        model:SetHeight(96)
-        model:SetPoint("CENTER", button, "CENTER", 0, 0)
-        model:SetFrameLevel(layer:GetFrameLevel() + 1)
-        model:EnableMouse(false)
         local icon = layer:CreateTexture(nil, "OVERLAY")
         icon:SetWidth(48)
         icon:SetHeight(48)
         icon:SetPoint("CENTER", button, "CENTER", 0, 4)
-        local lockLayer = CreateFrame("Frame", nil, layer)
-        lockLayer:SetAllPoints(button)
-        lockLayer:SetFrameLevel(model:GetFrameLevel() + 1)
-        lockLayer:EnableMouse(false)
-        model.lock = lockLayer:CreateTexture(nil, "OVERLAY")
-        model.lock:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-LOCK")
-        model.lock:SetTexCoord(0, 0.71875, 0, 0.875)
-        model.lock:SetWidth(12)
-        model.lock:SetHeight(14)
-        model.lock:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -8, 10)
-        model.lock:Hide()
-        frame.tileModel, frame.tileIcon = model, icon
+        frame.tileLayer, frame.tileIcon, frame.tileModels = layer, icon, {}
     end
+    for other, model in pairs(frame.tileModels) do
+        if other ~= kind then
+            self:ForgetPreview(model)
+            model:Hide()
+        end
+    end
+    if not frame.tileModels[kind] then
+        frame.tileModels[kind] = newTileModel(frame.tileLayer, button)
+    end
+    frame.tileModel = frame.tileModels[kind]
     return frame.tileModel, frame.tileIcon
 end
 
 function Transmog:HideTilePreviews()
     for _, frame in pairs(self.ItemButtons) do
-        if frame.tileModel then
-            self:ForgetPreview(frame.tileModel)
-            frame.tileModel:Hide()
+        if frame.tileModels then
+            for _, model in pairs(frame.tileModels) do
+                self:ForgetPreview(model)
+                model:Hide()
+            end
             frame.tileIcon:Hide()
         end
     end

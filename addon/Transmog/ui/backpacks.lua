@@ -192,7 +192,7 @@ function Transmog:RenderBackpacks()
 
             getglobal('TransmogLook' .. itemIndex .. 'ItemModel'):Hide()
             -- The backpack's own model; its icon for "No backpack", or if the model won't load.
-            local model, icon = self:TilePreview(frame, button)
+            local model, icon = self:TilePreview(frame, button, "file")
             local function showIcon()
                 if not icon:SetTexture(entry.icon or (ICON_DIR .. entry.id)) then
                     icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
