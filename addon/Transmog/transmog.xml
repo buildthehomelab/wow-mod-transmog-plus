@@ -200,14 +200,20 @@
             </Layer>
         </Layers>
         <Frames>
+            <!-- Anchored to both ends so the border follows the bar's width. -->
             <Button name="$parentBorder">
                 <Size>
-                    <AbsDimension x="281" y="32"/>
+                    <AbsDimension x="0" y="32"/>
                 </Size>
                 <Anchors>
                     <Anchor point="LEFT">
                         <Offset>
                             <AbsDimension x="-5" y="0"/>
+                        </Offset>
+                    </Anchor>
+                    <Anchor point="RIGHT">
+                        <Offset>
+                            <AbsDimension x="5" y="0"/>
                         </Offset>
                     </Anchor>
                 </Anchors>
