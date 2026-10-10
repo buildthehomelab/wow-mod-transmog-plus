@@ -491,36 +491,46 @@ namespace TransmogAddon
         SendToClient(player, "FormsUnlocked:" + std::to_string(phase));
     }
 
-    // "FormStatus:<form>=<display>,..." for every form; 0 = the default look.
+    // "FormStatus:<form>=<display>,..." for every form (or totem element) of the player's class;
+    // 0 = the default look.
     void SendFormStatus(Player* player)
     {
         std::string line = "FormStatus:";
+        bool first = true;
         for (uint8 i = 0; i < Transmog::FORM_KIND_COUNT; ++i)
         {
             Transmog::FormKind kind = Transmog::FormKind(i);
-            line += std::string(i ? "," : "") + Transmog::FormKindName(kind) + "="
+            if (Transmog::FormKindClass(kind) != player->getClass())
+                continue;
+            line += std::string(first ? "" : ",") + Transmog::FormKindName(kind) + "="
                 + std::to_string(sTransmog->GetChosenForm(player->GetGUID(), kind));
+            first = false;
         }
         SendToClient(player, line);
     }
 
-    // Every druid form look, unlocked or not, in display order:
-    // "Forms:start:<phase>", "Form:<display>:<unlocked>:<phase>:<form>:<preview creature>:<name>"...,
-    // "Forms:end", then the choices. Off, or not a druid, sends nothing: the addon hides the tab.
+    // Every look of the player's class (druid forms, shaman totems), unlocked or not, in display
+    // order: "Forms:start:<phase>",
+    // "Form:<display>:<unlocked>:<phase>:<form>:<preview creature>:<name>"..., "Forms:end", then
+    // the choices. Off, or a class without looks, sends nothing: the addon hides the tab.
     void HandleGetForms(Player* player, std::string const&)
     {
-        if (!sTransmog->FormsEnable || player->getClass() != CLASS_DRUID)
+        if (!sTransmog->HasFormLooks(player))
             return;
 
         // The tiles preview each look through a creature, and a 3.3.5 model frame only shows a
         // creature the client already has cached: send them all first (query responses).
         for (Transmog::FormEntry const& entry : sTransmog->forms)
-            if (CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(entry.previewCreature))
-                player->GetSession()->SendPacket(&creature->queryData);
+            if (Transmog::FormKindClass(entry.kind) == player->getClass())
+                if (CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(entry.previewCreature))
+                    player->GetSession()->SendPacket(&creature->queryData);
 
         SendToClient(player, "Forms:start:" + std::to_string(sTransmog->GetProgressionPhase(player)));
         for (Transmog::FormEntry const& entry : sTransmog->forms)
         {
+            if (Transmog::FormKindClass(entry.kind) != player->getClass())
+                continue;
+
             std::string line = "Form:" + std::to_string(entry.displayId) + ":"
                 + (sTransmog->IsFormUnlocked(player, entry) ? "1" : "0") + ":"
                 + std::to_string(entry.unlockPhase) + ":" + Transmog::FormKindName(entry.kind) + ":"
@@ -538,7 +548,7 @@ namespace TransmogAddon
         Transmog::FormKind kind = colon == std::string::npos ? Transmog::FORM_KIND_NONE
             : Transmog::FormKindByName(args.substr(0, colon));
         uint32 displayId;
-        if (!sTransmog->FormsEnable || kind == Transmog::FORM_KIND_NONE || !ParseUint32(args.substr(colon + 1), displayId))
+        if (!sTransmog->HasFormLooks(player) || kind == Transmog::FORM_KIND_NONE || !ParseUint32(args.substr(colon + 1), displayId))
         {
             SendToClient(player, "ApplyFormResult:0::0");
             return;

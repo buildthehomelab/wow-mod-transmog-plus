@@ -1,7 +1,10 @@
 #include "Transmog.h"
 #include "TransmogAddonProtocol.h"
 #include "Chat.h"
+#include "ObjectAccessor.h"
+#include "ObjectMgr.h"
 #include "SpellAuraEffects.h"
+#include "TemporarySummon.h"
 #include <array>
 #include <memory>
 
@@ -9,6 +12,10 @@
 // stock bear, cat, travel, aquatic, flight, moonkin and tree models. The druid picks one look per
 // form in the Forms tab; looks unlock with individual progression phases, and the stock look is
 // always there. The look goes on whenever the core sets the form's stock model.
+//
+// Shaman totem looks work the same way, with the four totem elements in place of the forms: the
+// shaman picks one look per element in the Totems tab, and it goes on the totem when the core
+// gives it the race's stock model.
 
 namespace
 {
@@ -21,7 +28,8 @@ namespace
     std::shared_mutex formStatesMutex;
 
     constexpr char const* FORM_KIND_NAMES[Transmog::FORM_KIND_COUNT] = {
-        "bear", "cat", "travel", "aquatic", "flight", "moonkin", "tree"
+        "bear", "cat", "travel", "aquatic", "flight", "moonkin", "tree",
+        "fire", "earth", "water", "air"
     };
 
     // Individual progression phases are quests base+1 .. base+MAX_PHASE.
@@ -30,8 +38,12 @@ namespace
     // Bots never pick a look, so they skip the queries and the hook.
     bool Tracked(Player* player)
     {
-        return sTransmog->Enable && sTransmog->FormsEnable && player->getClass() == CLASS_DRUID
-            && !Transmog_IsBotSession(player);
+        return sTransmog->Enable && sTransmog->HasFormLooks(player) && !Transmog_IsBotSession(player);
+    }
+
+    uint32 TotemSlotOf(Transmog::FormKind kind)
+    {
+        return SUMMON_SLOT_TOTEM_FIRE + (kind - Transmog::FORM_KIND_TOTEM_FIRE);
     }
 }
 
@@ -65,10 +77,34 @@ Transmog::FormKind Transmog::FormKindOf(ShapeshiftForm form)
     }
 }
 
+Transmog::FormKind Transmog::FormKindOfTotemSlot(uint32 slot)
+{
+    if (slot < SUMMON_SLOT_TOTEM_FIRE || slot > SUMMON_SLOT_TOTEM_AIR)
+        return FORM_KIND_NONE;
+    return FormKind(FORM_KIND_TOTEM_FIRE + (slot - SUMMON_SLOT_TOTEM_FIRE));
+}
+
+uint8 Transmog::FormKindClass(FormKind kind)
+{
+    if (kind >= FORM_KIND_COUNT)
+        return CLASS_NONE;
+    return kind >= FORM_KIND_TOTEM_FIRE ? CLASS_SHAMAN : CLASS_DRUID;
+}
+
+bool Transmog::HasFormLooks(Player const* player) const
+{
+    switch (player->getClass())
+    {
+        case CLASS_DRUID:  return FormsEnable;
+        case CLASS_SHAMAN: return TotemsEnable;
+        default:           return false;
+    }
+}
+
 void Transmog::LoadForms()
 {
     forms.clear();
-    if (!FormsEnable)
+    if (!FormsEnable && !TotemsEnable)
         return;
 
     QueryResult result = WorldDatabase.Query("SELECT DisplayId, Form, Name, UnlockPhase, PreviewCreature FROM mod_transmog_plus_forms ORDER BY SortOrder, DisplayId");
@@ -90,10 +126,12 @@ void Transmog::LoadForms()
             LOG_ERROR("module", "mod-transmog-plus: form look {} skipped, unknown form '{}'", entry.displayId, fields[1].Get<std::string>());
             continue;
         }
+        if (!(FormKindClass(entry.kind) == CLASS_SHAMAN ? TotemsEnable : FormsEnable))
+            continue;
         forms.push_back(std::move(entry));
     } while (result->NextRow());
 
-    LOG_INFO("module", "mod-transmog-plus: {} druid form looks loaded", forms.size());
+    LOG_INFO("module", "mod-transmog-plus: {} druid form and shaman totem looks loaded", forms.size());
 }
 
 Transmog::FormEntry const* Transmog::GetForm(uint32 displayId) const
@@ -146,7 +184,7 @@ uint32 Transmog::GetChosenForm(ObjectGuid guid, FormKind kind) const
 
 TransmogApplyResult Transmog::ApplyForm(Player* player, FormKind kind, uint32 displayId)
 {
-    if (kind >= FORM_KIND_COUNT || !Tracked(player))
+    if (kind >= FORM_KIND_COUNT || !Tracked(player) || FormKindClass(kind) != player->getClass())
         return TransmogApplyResult::InvalidAppearance;
 
     if (displayId)
@@ -172,9 +210,24 @@ TransmogApplyResult Transmog::ApplyForm(Player* player, FormKind kind, uint32 di
     else
         CharacterDatabase.Execute("DELETE FROM mod_transmog_plus_form_choice WHERE Owner = {} AND Form = {}", guid.GetCounter(), uint32(kind));
 
+    if (!player->IsInWorld())
+        return TransmogApplyResult::Success;
+
+    // A totem of that element is out: change it now. Setting the race's stock model again comes
+    // back through ApplyTotemLook.
+    if (FormKindClass(kind) == CLASS_SHAMAN)
+    {
+        uint32 slot = TotemSlotOf(kind);
+        Creature* totem = player->GetMap()->GetCreature(player->m_SummonSlot[slot]);
+        uint32 stock = sObjectMgr->GetModelForTotem(SummonSlot(slot), Races(player->getRace()));
+        if (totem && totem->IsTotem() && stock)
+            totem->SetDisplayId(stock);
+        return TransmogApplyResult::Success;
+    }
+
     // Already in that form: put the new look on now. RestoreDisplayId sets the form's stock
     // model again, which comes back through ApplyFormLook.
-    if (player->IsInWorld() && FormKindOf(player->GetShapeshiftForm()) == kind)
+    if (FormKindOf(player->GetShapeshiftForm()) == kind)
         player->RestoreDisplayId();
     return TransmogApplyResult::Success;
 }
@@ -206,17 +259,47 @@ void Transmog::ApplyFormLook(Player* player, uint32 displayId)
     player->SetUInt32Value(UNIT_FIELD_DISPLAYID, look);
 }
 
+// Runs from every SetDisplayId of a totem. The core gives a shaman's totem its race's model when
+// it's summoned (Totem::InitStats); the look the shaman picked for that element replaces it.
+void Transmog::ApplyTotemLook(Unit* totem, uint32 displayId)
+{
+    TempSummon const* summon = totem->ToTempSummon();
+    if (!summon || !summon->m_Properties)
+        return;
+
+    FormKind kind = FormKindOfTotemSlot(summon->m_Properties->Slot);
+    if (kind == FORM_KIND_NONE)
+        return;
+
+    Player* owner = ObjectAccessor::GetPlayer(*totem, summon->GetSummonerGUID());
+    if (!owner || !Tracked(owner))
+        return;
+
+    uint32 look = GetChosenForm(owner->GetGUID(), kind);
+    if (!look || look == displayId)
+        return;
+
+    // A look whose phase the character no longer has (an individual progression reset) stays off.
+    FormEntry const* entry = GetForm(look);
+    if (!entry || !IsFormUnlocked(owner, *entry))
+        return;
+
+    // Not SetDisplayId: that would come back through this hook.
+    totem->SetUInt32Value(UNIT_FIELD_DISPLAYID, look);
+}
+
 // After a phase is cleared: how many looks it opened up, in chat and to the addon.
 void Transmog::AnnounceFormUnlocks(Player* player, uint8 phase)
 {
     uint32 count = 0;
     for (FormEntry const& entry : forms)
-        if (entry.unlockPhase == phase)
+        if (entry.unlockPhase == phase && FormKindClass(entry.kind) == player->getClass())
             ++count;
     if (!count)
         return;
 
-    ChatHandler(player->GetSession()).PSendSysMessage("|cffff80ff{}|r {}", count, Tstr(player->GetSession(), LANG_TRANSMOG_FORMS_UNLOCKED));
+    uint32 text = player->getClass() == CLASS_SHAMAN ? LANG_TRANSMOG_TOTEMS_UNLOCKED : LANG_TRANSMOG_FORMS_UNLOCKED;
+    ChatHandler(player->GetSession()).PSendSysMessage("|cffff80ff{}|r {}", count, Tstr(player->GetSession(), text));
     TransmogAddon::SendFormsUnlocked(player, phase);
 }
 
@@ -273,8 +356,18 @@ public:
 
     void OnDisplayIdChange(Unit* unit, uint32 displayId) override
     {
-        Player* player = unit ? unit->ToPlayer() : nullptr;
-        if (player && Tracked(player))
+        if (!unit)
+            return;
+
+        if (unit->IsTotem())
+        {
+            if (sTransmog->Enable && sTransmog->TotemsEnable)
+                sTransmog->ApplyTotemLook(unit, displayId);
+            return;
+        }
+
+        Player* player = unit->ToPlayer();
+        if (player && player->getClass() == CLASS_DRUID && Tracked(player))
             sTransmog->ApplyFormLook(player, displayId);
     }
 };

@@ -4,8 +4,9 @@ local Transmog = _G.Transmog
 -- sends every look (Form:<display>:<unlocked>:<phase>:<form>:<preview creature>:<name>) and the
 -- current choice per form. Tiles preview each look through a creature that uses its display
 -- (3.3.5 model frames can't show a display id); locked looks show as a silhouette.
+-- Shamans get the same tab as Totems: one look per totem element in place of the forms.
 
-local FORMS = {
+local DRUID_FORMS = {
     { key = "bear",    name = "Bear Form",     icon = "Interface\\Icons\\Ability_Racial_BearForm" },
     { key = "cat",     name = "Cat Form",      icon = "Interface\\Icons\\Ability_Druid_CatForm" },
     { key = "travel",  name = "Travel Form",   icon = "Interface\\Icons\\Ability_Druid_TravelForm" },
@@ -15,7 +16,19 @@ local FORMS = {
     { key = "tree",    name = "Tree of Life",  icon = "Interface\\Icons\\Ability_Druid_TreeofLife" },
 }
 
-Transmog.formKey = "bear"
+local SHAMAN_TOTEMS = {
+    { key = "fire",  name = "Fire Totem",  icon = "Interface\\Icons\\Spell_Fire_SearingTotem" },
+    { key = "earth", name = "Earth Totem", icon = "Interface\\Icons\\Spell_Nature_StrengthOfEarthTotem02" },
+    { key = "water", name = "Water Totem", icon = "Interface\\Icons\\Spell_Nature_ManaRegenTotem" },
+    { key = "air",   name = "Air Totem",   icon = "Interface\\Icons\\Spell_Nature_Windfury" },
+}
+
+local _, playerClass = UnitClass("player")
+local TOTEMS = playerClass == "SHAMAN"
+local FORMS = TOTEMS and SHAMAN_TOTEMS or DRUID_FORMS
+local TAB_NAME = TOTEMS and "Totems" or "Forms"
+
+Transmog.formKey = FORMS[1].key
 
 local function formInfo(key)
     for _, f in ipairs(FORMS) do
@@ -71,7 +84,7 @@ function Transmog:SetFormsTabActive(active)
     local texture = active and 'tab_active' or 'tab_inactive'
     TransmogFrameFormsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\' .. texture)
     TransmogFrameFormsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
-    TransmogFrameFormsButtonText:SetText((active and HIGHLIGHT_FONT_COLOR_CODE or NORMAL_FONT_COLOR_CODE) .. 'Forms')
+    TransmogFrameFormsButtonText:SetText((active and HIGHLIGHT_FONT_COLOR_CODE or NORMAL_FONT_COLOR_CODE) .. TAB_NAME)
 end
 
 -- The form picker: one icon per form above the grid.
@@ -80,7 +93,7 @@ function Transmog:FormPicker()
         return self.formPicker
     end
     local picker = CreateFrame("Frame", "TransmogFrameFormPicker", TransmogFrame)
-    picker:SetWidth(7 * 26)
+    picker:SetWidth(table.getn(FORMS) * 26)
     picker:SetHeight(22)
     picker:SetPoint("TOPLEFT", TransmogFrame, "TOPLEFT", 268, -80)
     picker.buttons = {}
@@ -196,7 +209,7 @@ function Transmog:ApplyFormResult(success)
     if success == 1 then
         PlaySoundFile("Interface\\AddOns\\Transmog\\assets\\ui_transmogrify_apply.ogg", "Dialog")
     else
-        DEFAULT_CHAT_FRAME:AddMessage("|cffff4444[Transmog]|r Couldn't change the form look (not unlocked yet?).")
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff4444[Transmog]|r Couldn't change the look (not unlocked yet?).")
     end
 end
 
@@ -237,7 +250,7 @@ function Transmog:RenderForms()
     end
 
     local unlocked, total = self:CountForms()
-    TransmogFrameCollectedCollectedStatus:SetText("Forms: " .. unlocked .. "/" .. total)
+    TransmogFrameCollectedCollectedStatus:SetText(TAB_NAME .. ": " .. unlocked .. "/" .. total)
 
     local info = formInfo(key)
     local entries = { { id = 0, name = "Default " .. info.name, unlocked = true, icon = info.icon } }
@@ -279,9 +292,10 @@ function Transmog:RenderForms()
 
             local hint
             if entry.id == 0 then
-                hint = "Your usual " .. info.name .. "."
+                hint = TOTEMS and ("Your race's " .. info.name .. ".") or ("Your usual " .. info.name .. ".")
             elseif entry.unlocked then
-                hint = entry.id == chosen and "You're using this look." or "Click to use this look for " .. info.name .. "."
+                hint = entry.id == chosen and "You're using this look."
+                    or "Click to use this look for " .. (TOTEMS and ("your " .. string.lower(info.name) .. "s") or info.name) .. "."
             else
                 hint = "|cffff4444Locked.|r " .. self:FormUnlockHint(entry)
             end
@@ -352,7 +366,7 @@ end
 function Transmog:ShowFormsView()
     self.currentPage = 1
     -- Open on the form the druid is in, if it's one with looks.
-    local form = GetShapeshiftForm and GetShapeshiftForm() or 0
+    local form = not TOTEMS and GetShapeshiftForm and GetShapeshiftForm() or 0
     if form > 0 then
         local _, name = GetShapeshiftFormInfo(form)
         for _, f in ipairs(FORMS) do
