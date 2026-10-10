@@ -317,7 +317,7 @@ function Transmog:RenderForms()
             end)
 
             getglobal('TransmogLook' .. itemIndex .. 'ItemModel'):Hide()
-            local model, icon = self:TilePreview(frame, button)
+            local model, icon = self:TilePreview(frame, button, "creature")
             if entry.id == 0 or not entry.preview or entry.preview == 0 then
                 self:ForgetPreview(model)
                 model:Hide()
