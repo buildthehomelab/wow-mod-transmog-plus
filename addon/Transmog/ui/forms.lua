@@ -391,13 +391,22 @@ function Transmog:ShowFormsView()
             end
         end
     end
-    -- A warlock's tab opens on the demon that is out.
+    -- A warlock's tab opens on the demon that is out. The Infernal shares the Doomguard's family,
+    -- and the others go by names of their own (Zhar'tuk the Imp), so: its name, else its family.
     if DEMONS then
-        local family = UnitCreatureFamily("pet")
+        local name, family = UnitName("pet"), UnitCreatureFamily("pet")
+        local byFamily
         for _, f in ipairs(FORMS) do
-            if family == f.name then
+            if name == f.name then
                 self.formKey = f.key
+                byFamily = nil
+                break
+            elseif family == f.name then
+                byFamily = f.key
             end
+        end
+        if byFamily then
+            self.formKey = byFamily
         end
     end
     self:RenderForms()
