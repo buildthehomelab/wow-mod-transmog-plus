@@ -78,7 +78,8 @@ enum TransmogString : uint32
     LANG_TRANSMOG_BACKPACK_KNOWN,
     LANG_TRANSMOG_BACKPACK_DISABLED,
     LANG_TRANSMOG_FORMS_UNLOCKED,
-    LANG_TRANSMOG_TOTEMS_UNLOCKED
+    LANG_TRANSMOG_TOTEMS_UNLOCKED,
+    LANG_TRANSMOG_DEMONS_UNLOCKED
 };
 
 inline std::string const& Tstr(WorldSession* session, uint32 id)
@@ -178,15 +179,18 @@ public:
     void UpdateBackpack(Player* player, uint32 diff);
     void SendBackpackIntroMail(Player* player);
 
-    // Druid form looks and shaman totem looks (TransmogForms.cpp): one choice per form or totem
-    // element, unlocked by individual progression phase. A totem element is a form kind like any
-    // other; only how the look goes on differs. The looks themselves come from look packs, modules
-    // of their own (mod-retail-druid-forms, mod-retail-shaman-totems) that fill
-    // mod_transmog_plus_forms: without a class's pack there is nothing to pick and no tab.
+    // Druid form looks, shaman totem looks and warlock demon looks (TransmogForms.cpp): one choice
+    // per form, totem element or demon, unlocked by individual progression phase. A totem element
+    // or a demon is a form kind like any other; only how the look goes on differs. The looks
+    // themselves come from look packs, modules of their own (mod-retail-druid-forms,
+    // mod-retail-shaman-totems, mod-retail-warlock-pets) that fill mod_transmog_plus_forms:
+    // without a class's pack there is nothing to pick and no tab.
     bool FormsEnable;
     bool TotemsEnable;
+    bool DemonsEnable;
     bool hasDruidLooks = false;
     bool hasTotemLooks = false;
+    bool hasDemonLooks = false;
 
     // Stored in mod_transmog_plus_form_choice: add new kinds at the end.
     enum FormKind : uint8
@@ -194,6 +198,9 @@ public:
         FORM_KIND_BEAR, FORM_KIND_CAT, FORM_KIND_TRAVEL, FORM_KIND_AQUATIC, FORM_KIND_FLIGHT,
         FORM_KIND_MOONKIN, FORM_KIND_TREE,
         FORM_KIND_TOTEM_FIRE, FORM_KIND_TOTEM_EARTH, FORM_KIND_TOTEM_WATER, FORM_KIND_TOTEM_AIR,
+        FORM_KIND_DEMON_IMP, FORM_KIND_DEMON_VOIDWALKER, FORM_KIND_DEMON_SUCCUBUS,
+        FORM_KIND_DEMON_FELHUNTER, FORM_KIND_DEMON_FELGUARD, FORM_KIND_DEMON_INFERNAL,
+        FORM_KIND_DEMON_DOOMGUARD,
         FORM_KIND_COUNT, FORM_KIND_NONE = FORM_KIND_COUNT
     };
     struct FormEntry
@@ -211,8 +218,12 @@ public:
     static FormKind FormKindByName(std::string const& name);
     static FormKind FormKindOf(ShapeshiftForm form);
     static FormKind FormKindOfTotemSlot(uint32 slot);
-    // The class that owns a kind: druids the forms, shamans the totems.
+    // By the demon's creature entry.
+    static FormKind FormKindOfDemon(uint32 entry);
+    // The class that owns a kind: druids the forms, shamans the totems, warlocks the demons.
     static uint8 FormKindClass(FormKind kind);
+    // The class's looks are switched on (Transmog.Forms/Totems/Demons.Enable).
+    bool FormClassEnabled(uint8 playerClass) const;
     // The player's class has looks to pick (its pack is installed), and they're switched on.
     bool HasFormLooks(Player const* player) const;
     void LoadForms();
@@ -225,6 +236,8 @@ public:
     TransmogApplyResult ApplyForm(Player* player, FormKind kind, uint32 displayId);
     void ApplyFormLook(Player* player, uint32 displayId);
     void ApplyTotemLook(Unit* totem, uint32 displayId);
+    void ApplyDemonLook(Creature* demon);
+    void ApplyDemonLooks(Player* player);
     void AnnounceFormUnlocks(Player* player, uint8 phase);
 
     // Account appearance data is shared while logged-in characters reference it.

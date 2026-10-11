@@ -491,8 +491,8 @@ namespace TransmogAddon
         SendToClient(player, "FormsUnlocked:" + std::to_string(phase));
     }
 
-    // "FormStatus:<form>=<display>,..." for every form (or totem element) of the player's class;
-    // 0 = the default look.
+    // "FormStatus:<form>=<display>,..." for every form (or totem element, or demon) of the
+    // player's class; 0 = the default look.
     void SendFormStatus(Player* player)
     {
         std::string line = "FormStatus:";
@@ -509,8 +509,8 @@ namespace TransmogAddon
         SendToClient(player, line);
     }
 
-    // Every look of the player's class (druid forms, shaman totems), unlocked or not, in display
-    // order: "Forms:start:<phase>",
+    // Every look of the player's class (druid forms, shaman totems, warlock demons), unlocked or
+    // not, in display order: "Forms:start:<phase>",
     // "Form:<display>:<unlocked>:<phase>:<form>:<preview creature>:<name>"..., "Forms:end", then
     // the choices. Off, or a class without looks, sends nothing: the addon hides the tab.
     void HandleGetForms(Player* player, std::string const&)

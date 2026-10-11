@@ -16,6 +16,9 @@
 // Shaman totem looks work the same way, with the four totem elements in place of the forms: the
 // shaman picks one look per element in the Totems tab, and it goes on the totem when the core
 // gives it the race's stock model.
+//
+// Warlock demon looks too, with the seven demons in place of the forms: the warlock picks one look
+// per demon in the Demons tab, and it goes on the demon whenever it wears its own model.
 
 namespace
 {
@@ -29,7 +32,24 @@ namespace
 
     constexpr char const* FORM_KIND_NAMES[Transmog::FORM_KIND_COUNT] = {
         "bear", "cat", "travel", "aquatic", "flight", "moonkin", "tree",
-        "fire", "earth", "water", "air"
+        "fire", "earth", "water", "air",
+        "imp", "voidwalker", "succubus", "felhunter", "felguard", "infernal", "doomguard"
+    };
+
+    // The warlock's demons, by creature entry.
+    struct DemonKind
+    {
+        uint32 entry;
+        Transmog::FormKind kind;
+    };
+    constexpr DemonKind DEMON_KINDS[] = {
+        { 416,   Transmog::FORM_KIND_DEMON_IMP },
+        { 1860,  Transmog::FORM_KIND_DEMON_VOIDWALKER },
+        { 1863,  Transmog::FORM_KIND_DEMON_SUCCUBUS },
+        { 417,   Transmog::FORM_KIND_DEMON_FELHUNTER },
+        { 17252, Transmog::FORM_KIND_DEMON_FELGUARD },
+        { 89,    Transmog::FORM_KIND_DEMON_INFERNAL },
+        { 11859, Transmog::FORM_KIND_DEMON_DOOMGUARD }
     };
 
     // Individual progression phases are quests base+1 .. base+MAX_PHASE.
@@ -84,34 +104,56 @@ Transmog::FormKind Transmog::FormKindOfTotemSlot(uint32 slot)
     return FormKind(FORM_KIND_TOTEM_FIRE + (slot - SUMMON_SLOT_TOTEM_FIRE));
 }
 
+Transmog::FormKind Transmog::FormKindOfDemon(uint32 entry)
+{
+    for (DemonKind const& demon : DEMON_KINDS)
+        if (demon.entry == entry)
+            return demon.kind;
+    return FORM_KIND_NONE;
+}
+
 uint8 Transmog::FormKindClass(FormKind kind)
 {
     if (kind >= FORM_KIND_COUNT)
         return CLASS_NONE;
+    if (kind >= FORM_KIND_DEMON_IMP)
+        return CLASS_WARLOCK;
     return kind >= FORM_KIND_TOTEM_FIRE ? CLASS_SHAMAN : CLASS_DRUID;
+}
+
+bool Transmog::FormClassEnabled(uint8 playerClass) const
+{
+    switch (playerClass)
+    {
+        case CLASS_DRUID:   return FormsEnable;
+        case CLASS_SHAMAN:  return TotemsEnable;
+        case CLASS_WARLOCK: return DemonsEnable;
+        default:            return false;
+    }
 }
 
 bool Transmog::HasFormLooks(Player const* player) const
 {
     switch (player->getClass())
     {
-        case CLASS_DRUID:  return FormsEnable && hasDruidLooks;
-        case CLASS_SHAMAN: return TotemsEnable && hasTotemLooks;
-        default:           return false;
+        case CLASS_DRUID:   return FormsEnable && hasDruidLooks;
+        case CLASS_SHAMAN:  return TotemsEnable && hasTotemLooks;
+        case CLASS_WARLOCK: return DemonsEnable && hasDemonLooks;
+        default:            return false;
     }
 }
 
 void Transmog::LoadForms()
 {
     forms.clear();
-    hasDruidLooks = hasTotemLooks = false;
-    if (!FormsEnable && !TotemsEnable)
+    hasDruidLooks = hasTotemLooks = hasDemonLooks = false;
+    if (!FormsEnable && !TotemsEnable && !DemonsEnable)
         return;
 
     QueryResult result = WorldDatabase.Query("SELECT DisplayId, Form, Name, UnlockPhase, PreviewCreature FROM mod_transmog_plus_forms ORDER BY SortOrder, DisplayId");
     if (!result)
     {
-        LOG_INFO("module", "mod-transmog-plus: no druid form or shaman totem looks (no look pack installed)");
+        LOG_INFO("module", "mod-transmog-plus: no druid form, shaman totem or warlock demon looks (no look pack installed)");
         return;
     }
 
@@ -130,14 +172,15 @@ void Transmog::LoadForms()
             LOG_ERROR("module", "mod-transmog-plus: form look {} skipped, unknown form '{}'", entry.displayId, fields[1].Get<std::string>());
             continue;
         }
-        if (!(FormKindClass(entry.kind) == CLASS_SHAMAN ? TotemsEnable : FormsEnable))
+        uint8 owner = FormKindClass(entry.kind);
+        if (!FormClassEnabled(owner))
             continue;
-        (FormKindClass(entry.kind) == CLASS_SHAMAN ? hasTotemLooks : hasDruidLooks) = true;
+        (owner == CLASS_WARLOCK ? hasDemonLooks : owner == CLASS_SHAMAN ? hasTotemLooks : hasDruidLooks) = true;
         forms.push_back(std::move(entry));
     } while (result->NextRow());
 
-    LOG_INFO("module", "mod-transmog-plus: {} druid form and shaman totem looks loaded (druid forms: {}, shaman totems: {})",
-        forms.size(), hasDruidLooks ? "yes" : "no pack", hasTotemLooks ? "yes" : "no pack");
+    LOG_INFO("module", "mod-transmog-plus: {} form, totem and demon looks loaded (druid forms: {}, shaman totems: {}, warlock demons: {})",
+        forms.size(), hasDruidLooks ? "yes" : "no pack", hasTotemLooks ? "yes" : "no pack", hasDemonLooks ? "yes" : "no pack");
 }
 
 Transmog::FormEntry const* Transmog::GetForm(uint32 displayId) const
@@ -231,6 +274,13 @@ TransmogApplyResult Transmog::ApplyForm(Player* player, FormKind kind, uint32 di
         return TransmogApplyResult::Success;
     }
 
+    // A demon of that kind is out: change it now.
+    if (FormKindClass(kind) == CLASS_WARLOCK)
+    {
+        ApplyDemonLooks(player);
+        return TransmogApplyResult::Success;
+    }
+
     // Already in that form: put the new look on now. RestoreDisplayId sets the form's stock
     // model again, which comes back through ApplyFormLook.
     if (FormKindOf(player->GetShapeshiftForm()) == kind)
@@ -294,6 +344,49 @@ void Transmog::ApplyTotemLook(Unit* totem, uint32 displayId)
     totem->SetUInt32Value(UNIT_FIELD_DISPLAYID, look);
 }
 
+// A warlock's demon wears the look picked for its kind. Runs when the demon's stats are set (it is
+// summoned, comes back after a flight or a login, or levels), when the core gives it its own model
+// back, and when the warlock picks a look. Only the demon's own model and this kind's looks are
+// swapped, so a transform is left alone.
+void Transmog::ApplyDemonLook(Creature* demon)
+{
+    FormKind kind = FormKindOfDemon(demon->GetEntry());
+    if (kind == FORM_KIND_NONE)
+        return;
+
+    Player* owner = ObjectAccessor::GetPlayer(*demon, demon->GetOwnerGUID());
+    if (!owner || owner->getClass() != CLASS_WARLOCK || !Tracked(owner))
+        return;
+
+    uint32 stock = demon->GetNativeDisplayId();
+    uint32 worn = demon->GetDisplayId();
+    if (worn != stock)
+    {
+        FormEntry const* entry = GetForm(worn);
+        if (!entry || entry->kind != kind)
+            return;
+    }
+
+    // No look, or one whose phase the character no longer has (an individual progression reset):
+    // the demon's own model.
+    uint32 look = GetChosenForm(owner->GetGUID(), kind);
+    FormEntry const* entry = look ? GetForm(look) : nullptr;
+    if (!entry || !IsFormUnlocked(owner, *entry))
+        look = stock;
+
+    // Not SetDisplayId: that would come back through the hook, and it resets the demon's size.
+    if (look != worn)
+        demon->SetUInt32Value(UNIT_FIELD_DISPLAYID, look);
+}
+
+void Transmog::ApplyDemonLooks(Player* player)
+{
+    for (Unit* controlled : player->m_Controlled)
+        if (Creature* demon = controlled->ToCreature())
+            if (demon->GetOwnerGUID() == player->GetGUID())
+                ApplyDemonLook(demon);
+}
+
 // After a phase is cleared: how many looks it opened up, in chat and to the addon.
 void Transmog::AnnounceFormUnlocks(Player* player, uint8 phase)
 {
@@ -304,7 +397,11 @@ void Transmog::AnnounceFormUnlocks(Player* player, uint8 phase)
     if (!count)
         return;
 
-    uint32 text = player->getClass() == CLASS_SHAMAN ? LANG_TRANSMOG_TOTEMS_UNLOCKED : LANG_TRANSMOG_FORMS_UNLOCKED;
+    uint32 text = LANG_TRANSMOG_FORMS_UNLOCKED;
+    if (player->getClass() == CLASS_SHAMAN)
+        text = LANG_TRANSMOG_TOTEMS_UNLOCKED;
+    else if (player->getClass() == CLASS_WARLOCK)
+        text = LANG_TRANSMOG_DEMONS_UNLOCKED;
     ChatHandler(player->GetSession()).PSendSysMessage("|cffff80ff{}|r {}", count, Tstr(player->GetSession(), text));
     TransmogAddon::SendFormsUnlocked(player, phase);
 }
@@ -316,7 +413,8 @@ public:
         PLAYERHOOK_ON_LOGIN,
         PLAYERHOOK_ON_LOGOUT,
         PLAYERHOOK_ON_DELETE,
-        PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST
+        PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST,
+        PLAYERHOOK_ON_AFTER_GUARDIAN_INIT_STATS_FOR_LEVEL
     }) { }
 
     void OnPlayerLogin(Player* player) override
@@ -328,6 +426,9 @@ public:
         // Shapeshift auras come back before this state exists: put the look on now.
         if (Transmog::FormKindOf(player->GetShapeshiftForm()) != Transmog::FORM_KIND_NONE)
             player->RestoreDisplayId();
+        // So does the warlock's demon.
+        if (player->getClass() == CLASS_WARLOCK)
+            sTransmog->ApplyDemonLooks(player);
     }
 
     void OnPlayerLogout(Player* player) override
@@ -338,6 +439,14 @@ public:
     void OnPlayerDelete(ObjectGuid guid, uint32) override
     {
         CharacterDatabase.Execute("DELETE FROM mod_transmog_plus_form_choice WHERE Owner = {}", guid.GetCounter());
+    }
+
+    // A pet or guardian of the player is out and has its stats: summoned, back after a flight or a
+    // login, or levelled.
+    void OnPlayerAfterGuardianInitStatsForLevel(Player* player, Guardian* guardian) override
+    {
+        if (player->getClass() == CLASS_WARLOCK && Tracked(player))
+            sTransmog->ApplyDemonLook(guardian);
     }
 
     // Individual progression records a cleared phase by rewarding quest base+phase.
@@ -369,6 +478,16 @@ public:
         {
             if (sTransmog->Enable && sTransmog->TotemsEnable)
                 sTransmog->ApplyTotemLook(unit, displayId);
+            return;
+        }
+
+        // A demon given its own model back (a transform ended). While it is being made it has no
+        // owner yet: OnPlayerAfterGuardianInitStatsForLevel covers that.
+        if (Creature* creature = unit->ToCreature())
+        {
+            if (sTransmog->Enable && sTransmog->DemonsEnable && sTransmog->hasDemonLooks
+                && displayId == creature->GetNativeDisplayId() && creature->GetOwnerGUID().IsPlayer())
+                sTransmog->ApplyDemonLook(creature);
             return;
         }
 
