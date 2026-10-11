@@ -315,3 +315,19 @@ Transmog.Forms.Enable = 1
 Transmog.Totems.Enable = 1
 
 ###################################################################################################
+#    WARLOCK DEMONS
+#
+#    Transmog.Demons.Enable
+#        Description: Warlocks pick a look for each demon (imp, voidwalker, succubus, felhunter,
+#                     felguard, infernal, doomguard) from the Demons tab. The looks come from a
+#                     look pack, a module of its own (mod-retail-warlock-pets): without one
+#                     installed there are no looks and no Demons tab, whatever this says. Looks
+#                     unlock per individual progression phase cleared, like the druid forms, and
+#                     share their table (mod_transmog_plus_forms).
+#        Default:     1 - (Enabled when a pack is installed)
+#                     0 - (Disabled)
+#
+
+Transmog.Demons.Enable = 1
+
+###################################################################################################

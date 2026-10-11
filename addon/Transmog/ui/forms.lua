@@ -5,6 +5,7 @@ local Transmog = _G.Transmog
 -- current choice per form. Tiles preview each look through a creature that uses its display
 -- (3.3.5 model frames can't show a display id); locked looks show dimmed, with a padlock.
 -- Shamans get the same tab as Totems: one look per totem element in place of the forms.
+-- Warlocks get it as Demons: one look per demon.
 
 local DRUID_FORMS = {
     { key = "bear",    name = "Bear Form",     icon = "Interface\\Icons\\Ability_Racial_BearForm" },
@@ -23,10 +24,21 @@ local SHAMAN_TOTEMS = {
     { key = "air",   name = "Air Totem",   icon = "Interface\\Icons\\Spell_Nature_Windfury" },
 }
 
+local WARLOCK_DEMONS = {
+    { key = "imp",        name = "Imp",        icon = "Interface\\Icons\\Spell_Shadow_SummonImp" },
+    { key = "voidwalker", name = "Voidwalker", icon = "Interface\\Icons\\Spell_Shadow_SummonVoidWalker" },
+    { key = "succubus",   name = "Succubus",   icon = "Interface\\Icons\\Spell_Shadow_SummonSuccubus" },
+    { key = "felhunter",  name = "Felhunter",  icon = "Interface\\Icons\\Spell_Shadow_SummonFelHunter" },
+    { key = "felguard",   name = "Felguard",   icon = "Interface\\Icons\\Spell_Shadow_SummonFelGuard" },
+    { key = "infernal",   name = "Infernal",   icon = "Interface\\Icons\\Spell_Shadow_SummonInfernal" },
+    { key = "doomguard",  name = "Doomguard",  icon = "Interface\\Icons\\Spell_Shadow_AntiMagicShell" },
+}
+
 local _, playerClass = UnitClass("player")
 local TOTEMS = playerClass == "SHAMAN"
-local FORMS = TOTEMS and SHAMAN_TOTEMS or DRUID_FORMS
-local TAB_NAME = TOTEMS and "Totems" or "Forms"
+local DEMONS = playerClass == "WARLOCK"
+local FORMS = TOTEMS and SHAMAN_TOTEMS or DEMONS and WARLOCK_DEMONS or DRUID_FORMS
+local TAB_NAME = TOTEMS and "Totems" or DEMONS and "Demons" or "Forms"
 
 Transmog.formKey = FORMS[1].key
 
@@ -292,10 +304,13 @@ function Transmog:RenderForms()
 
             local hint
             if entry.id == 0 then
-                hint = TOTEMS and ("Your race's " .. info.name .. ".") or ("Your usual " .. info.name .. ".")
+                hint = TOTEMS and ("Your race's " .. info.name .. ".")
+                    or DEMONS and ("The " .. info.name .. "'s own look.")
+                    or ("Your usual " .. info.name .. ".")
             elseif entry.unlocked then
                 hint = entry.id == chosen and "You're using this look."
-                    or "Click to use this look for " .. (TOTEMS and ("your " .. string.lower(info.name) .. "s") or info.name) .. "."
+                    or "Click to use this look for " .. (TOTEMS and ("your " .. string.lower(info.name) .. "s")
+                        or DEMONS and ("your " .. info.name) or info.name) .. "."
             else
                 hint = "|cffff4444Locked.|r " .. self:FormUnlockHint(entry)
             end
@@ -366,7 +381,7 @@ end
 function Transmog:ShowFormsView()
     self.currentPage = 1
     -- Open on the form the druid is in, if it's one with looks.
-    local form = not TOTEMS and GetShapeshiftForm and GetShapeshiftForm() or 0
+    local form = not TOTEMS and not DEMONS and GetShapeshiftForm and GetShapeshiftForm() or 0
     if form > 0 then
         local _, name = GetShapeshiftFormInfo(form)
         for _, f in ipairs(FORMS) do
@@ -374,6 +389,24 @@ function Transmog:ShowFormsView()
                     or (f.key == "flight" and name == "Swift Flight Form")) then
                 self.formKey = f.key
             end
+        end
+    end
+    -- A warlock's tab opens on the demon that is out. The Infernal shares the Doomguard's family,
+    -- and the others go by names of their own (Zhar'tuk the Imp), so: its name, else its family.
+    if DEMONS then
+        local name, family = UnitName("pet"), UnitCreatureFamily("pet")
+        local byFamily
+        for _, f in ipairs(FORMS) do
+            if name == f.name then
+                self.formKey = f.key
+                byFamily = nil
+                break
+            elseif family == f.name then
+                byFamily = f.key
+            end
+        end
+        if byFamily then
+            self.formKey = byFamily
         end
     end
     self:RenderForms()

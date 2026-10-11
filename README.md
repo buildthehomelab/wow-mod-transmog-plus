@@ -43,7 +43,11 @@ it collects appearances the retail way (see below) and ships a migration from mo
 - Shaman totems (optional, with a look pack): shamans pick a look for each totem element (fire,
   earth, water, air) from the Totems tab, which takes the Forms tab's place for them. The look
   goes on when the totem is summoned, and everyone sees it (`Transmog.Totems.Enable`).
-- Look packs: this module has the Forms and Totems tabs but ships no looks. They come from
+- Warlock demons (optional, with a look pack): warlocks pick a look for each demon (imp,
+  voidwalker, succubus, felhunter, felguard, infernal, doomguard) from the Demons tab. The look
+  goes on whenever the demon is out, and everyone sees it; the demon's size on the ground, its
+  reach and its abilities stay its own (`Transmog.Demons.Enable`).
+- Look packs: this module has the Forms, Totems and Demons tabs but ships no looks. They come from
   packs, each a small module of its own with its world SQL and a client patch, installed next
   to this one:
 
@@ -51,6 +55,7 @@ it collects appearances the retail way (see below) and ships a migration from mo
   |---|---|---|
   | [wow-mod-retail-druid-forms](https://github.com/buildthehomelab/wow-mod-retail-druid-forms) | 265 retail druid form looks | patch-R |
   | [wow-mod-retail-shaman-totems](https://github.com/buildthehomelab/wow-mod-retail-shaman-totems) | 80 totem looks: the client's five race sets and 15 retail sets | patch-V |
+  | [wow-mod-retail-warlock-pets](https://github.com/buildthehomelab/wow-mod-retail-warlock-pets) | 27 demon looks, all displays the Reforged client already has | none yet |
 
   A pack fills the world table `mod_transmog_plus_forms`. A class with no looks in it gets no
   tab, so a realm without packs is plain transmog, with nothing else to switch off. The packs
