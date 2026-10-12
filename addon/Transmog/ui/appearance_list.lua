@@ -17,27 +17,81 @@ function Transmog:setProgressBar(collected, possible)
     TransmogFrameCollected:Show()
 end
 
+-- Looks whose lead item the client hasn't cached yet, by slot then item class. Their tiles show a
+-- placeholder until the item arrives; the frame below polls for that, as 3.3.5 has no event for it.
+Transmog.uncachedLooks = {}
+
+local CACHE_POLL = 0.2
+-- Stop polling when nothing has arrived for this long; reopening the window asks again.
+local CACHE_GIVE_UP = 30
+
 Transmog.availableTransmogsCacheDelay = CreateFrame("Frame")
 Transmog.availableTransmogsCacheDelay:Hide()
-
-Transmog.availableTransmogsCacheDelay.InventorySlotId = 0
-Transmog.availableTransmogsCacheDelay.ItemClass = 0
-
-Transmog.availableTransmogsCacheDelay:SetScript("OnShow", function()
-    this.startTime = GetTime()
-end)
+Transmog.availableTransmogsCacheDelay.lastCheck = 0
+Transmog.availableTransmogsCacheDelay.lastProgress = 0
 
 Transmog.availableTransmogsCacheDelay:SetScript("OnUpdate", function()
-    local plus = 0.1
-    local gt = GetTime() * 1000
-    local st = (this.startTime + plus) * 1000
-    if gt >= st then
+    local now = GetTime()
+    if now - this.lastCheck < CACHE_POLL then
+        return
+    end
+    this.lastCheck = now
 
-        twfdebug("delay cache: " .. Transmog.availableTransmogsCacheDelay.InventorySlotId)
-        Transmog:prepareAvailableTransmogs(Transmog.availableTransmogsCacheDelay.InventorySlotId, Transmog.availableTransmogsCacheDelay.ItemClass)
-        Transmog.availableTransmogsCacheDelay:Hide()
+    local arrived = {}
+    local waiting = false
+    for slot, classes in pairs(Transmog.uncachedLooks) do
+        for itemClass, pending in pairs(classes) do
+            local groups = Transmog.appearanceGroups[slot] and Transmog.appearanceGroups[slot][itemClass]
+            if groups ~= pending.groups then
+                -- The server is sending this list again; its "end" builds the new one.
+                classes[itemClass] = nil
+            else
+                waiting = true
+                for _, itemID in ipairs(pending.ids) do
+                    if GetItemInfo(itemID) then
+                        table.insert(arrived, { slot, itemClass })
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    local frame = Transmog.availableTransmogsCacheDelay
+    if table.getn(arrived) > 0 then
+        frame.lastProgress = now
+    elseif not waiting or now - frame.lastProgress > CACHE_GIVE_UP then
+        Transmog.uncachedLooks = {}
+        frame:Hide()
+    end
+
+    local current = false
+    for _, list in ipairs(arrived) do
+        twfdebug("delay cache: " .. list[1])
+        Transmog:prepareAvailableTransmogs(list[1], list[2])
+        if list[1] == Transmog.currentTransmogSlot and list[2] == Transmog.currentTransmogItemClass then
+            current = true
+        end
+    end
+    if current and Transmog:ShownLooksChanged() then
+        Transmog:RefreshItemsView()
     end
 end)
+
+-- Whether a rebuild of the list on screen changed what the grid shows: a placeholder tile's item
+-- arrived, or a search now matches more looks. Arrivals on other pages need no redraw.
+function Transmog:ShownLooksChanged()
+    if self.showMissing or self.tab ~= 'items' or not TransmogFrame:IsVisible() then
+        return false
+    end
+    for _, look in ipairs(self.ItemButtons) do
+        if look:IsShown() and look.uncached and GetItemInfo(look.id) then
+            return true
+        end
+    end
+    local shown = self:GetShownLooks(self.currentTransmogSlot, self.currentTransmogItemClass)
+    return table.getn(shown) ~= self.shownLookCount
+end
 
 -- Processes available transmog data for a slot and item class, building the display list.
 function Transmog:prepareAvailableTransmogs(slot, itemClass)
@@ -50,47 +104,52 @@ function Transmog:prepareAvailableTransmogs(slot, itemClass)
 
     self.availableTransmogItems[slot][itemClass] = {}
 
+    local eqItemLink = nil
+    local inventoryItemLink = GetInventoryItemLink('player', slot)
+    if inventoryItemLink then
+        local _, _, eqItemLink2 = TransmogFrame_Find(inventoryItemLink, "(item:%d+:%d+:%d+:%d+)");
+        eqItemLink = eqItemLink2;
+    end
+    local eqItemID = eqItemLink and self:IDFromLink(eqItemLink)
+
     -- One tile per look; its lead item is what gets applied, the rest are extra sources.
+    -- A look the client hasn't cached keeps its place in the list: stopping at it used to hide
+    -- every look after it.
     local groups = self.appearanceGroups[slot] and self.appearanceGroups[slot][itemClass] or {}
+    local uncached = {}
     for i, group in ipairs(groups) do
         local itemID = group[1]
         local name, link, quality, level, min_level, class, subclass, _, inv_type, tex = GetItemInfo(itemID)
 
-		local eqItemLink = nil
-		local inventoryItemLink = GetInventoryItemLink('player', slot)
-		if inventoryItemLink then
-			local _, _, eqItemLink2 = TransmogFrame_Find(inventoryItemLink, "(item:%d+:%d+:%d+:%d+)");
-			eqItemLink = eqItemLink2;
-		end
-
         if not name then
-            self:cacheItem(itemID);
-            twfdebug("caching item " .. itemID)
-            Transmog.availableTransmogsCacheDelay.InventorySlotId = slot
-			Transmog.availableTransmogsCacheDelay.ItemClass = itemClass
-            Transmog.availableTransmogsCacheDelay:Show()
-            return
+            table.insert(uncached, itemID)
         end
 
-        if name then
-			local reset = false
-			if eqItemLink then
-				reset = itemID == self:IDFromLink(eqItemLink)
-			end
-            table.insert(self.availableTransmogItems[slot][itemClass], {
-                ['id'] = itemID,
-                ['reset'] = reset,
-                ['name'] = name,
-                ['link'] = link,
-                ['quality'] = quality,
-                ['t1'] = class,
-                ['t2'] = subclass,
-                ['equip_slot'] = inv_type,
-                ['tex'] = tex,
-                ['itemLink'] = eqItemLink,
-                ['sources'] = group
-            })
+        table.insert(self.availableTransmogItems[slot][itemClass], {
+            ['id'] = itemID,
+            ['reset'] = itemID == eqItemID,
+            ['uncached'] = not name,
+            ['name'] = name or ("Item #" .. itemID),
+            ['link'] = link,
+            ['quality'] = quality or 1,
+            ['t1'] = class,
+            ['t2'] = subclass,
+            ['equip_slot'] = inv_type,
+            ['tex'] = tex,
+            ['itemLink'] = eqItemLink,
+            ['sources'] = group
+        })
+    end
+
+    if table.getn(uncached) > 0 then
+        if not self.uncachedLooks[slot] then
+            self.uncachedLooks[slot] = {}
         end
+        self.uncachedLooks[slot][itemClass] = { groups = groups, ids = uncached }
+        self.availableTransmogsCacheDelay.lastProgress = GetTime()
+        self.availableTransmogsCacheDelay:Show()
+    elseif self.uncachedLooks[slot] then
+        self.uncachedLooks[slot][itemClass] = nil
     end
 
     if Transmog.hideableSlots[slot] then
@@ -163,6 +222,9 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
         TransmogFrameNoTransmogs:Show()
     end
 
+    self.shownLookCount = table.getn(shown)
+    self.currentPage = math.min(self.currentPage, math.max(1, self:ceil(table.getn(shown) / self.ipp)))
+
     local index = 0
     local row = 0
     local col = 0
@@ -182,6 +244,7 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
             self.ItemButtons[itemIndex].name = item.name
             self.ItemButtons[itemIndex].id = item.id
             self.ItemButtons[itemIndex].reset = item.reset
+            self.ItemButtons[itemIndex].uncached = item.uncached
 
             getglobal('TransmogLook' .. itemIndex .. 'Button'):SetID(item.id)
             getglobal('TransmogLook' .. itemIndex .. 'ButtonRevert'):Hide()

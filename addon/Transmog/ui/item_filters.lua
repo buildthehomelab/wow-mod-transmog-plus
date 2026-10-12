@@ -25,7 +25,8 @@ local function lookMatches(item, needle)
     if needle == "" then
         return true
     end
-    if string.find(lower(item.name), needle, 1, true) then
+    -- A look still loading has a placeholder name; only its loaded sources can match.
+    if not item.uncached and string.find(lower(item.name), needle, 1, true) then
         return true
     end
     for _, id in ipairs(item.sources or {}) do
@@ -223,9 +224,9 @@ function Transmog:LinkLook(itemId)
     local _, link = GetItemInfo(itemId)
     if link then
         ChatEdit_InsertLink(link)
-        return true
     end
-    return false
+    -- An item still loading has no link yet; the click is still a link click, not a try-on.
+    return true
 end
 
 function TransmogFilters_OnSearchChanged(editBox)

@@ -131,6 +131,10 @@ Transmog:SetScript("OnEvent", function()
 						Transmog.appearanceGroups[slot][itemClass] = {}
 					elseif TransmogFrame_Find(ex[5], "end", 1, true) then
 						Transmog:prepareAvailableTransmogs(slot, itemClass)
+						-- The grid may be showing this list from before it was sent again.
+						if slot == Transmog.currentTransmogSlot and itemClass == Transmog.currentTransmogItemClass and not Transmog.showMissing then
+							Transmog:RefreshItemsView()
+						end
 					else
 						-- Each token is one look: "lead,source,..."; "+source,..." continues the
 						-- previous look. An older server sends one item per token.
