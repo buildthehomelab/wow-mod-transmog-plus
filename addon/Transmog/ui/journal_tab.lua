@@ -10,15 +10,28 @@ if not (Journal and Journal.RegisterTab and (Journal.API or 0) >= 1 and Transmog
 
 local docked = false
 local status
+local saved -- where the window was before it went into the Journal
+
+-- The sets view pins its strata to the window's when it's made; keep it with the window's.
+local function matchSets()
+    if TransmogSetsFrame then
+        TransmogSetsFrame:SetFrameStrata(TransmogFrame:GetFrameStrata())
+        TransmogSetsFrame:SetFrameLevel(TransmogFrame:GetFrameLevel() + 2)
+    end
+end
 
 local function dock(panel)
     if docked then return end
     docked = true
+    local point, relativeTo, relativePoint, x, y = TransmogFrame:GetPoint(1)
+    saved = { point = point, relativeTo = relativeTo, relativePoint = relativePoint, x = x, y = y,
+        strata = TransmogFrame:GetFrameStrata(), level = TransmogFrame:GetFrameLevel() }
     TransmogFrame:SetParent(panel)
     TransmogFrame:ClearAllPoints()
     TransmogFrame:SetPoint("CENTER", panel, "CENTER", 0, 0)
     TransmogFrame:SetFrameStrata(panel:GetFrameStrata())
     TransmogFrame:SetFrameLevel(panel:GetFrameLevel() + 5)
+    matchSets()
     -- Dragging would move it around inside the Journal.
     TransmogFrame:RegisterForDrag()
 end
@@ -28,8 +41,16 @@ local function undock()
     docked = false
     TransmogFrame:SetParent(UIParent)
     TransmogFrame:ClearAllPoints()
-    TransmogFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    TransmogFrame:SetFrameStrata("MEDIUM")
+    if saved and saved.point and saved.relativeTo ~= nil and saved.relativeTo ~= TransmogFrame then
+        TransmogFrame:SetPoint(saved.point, saved.relativeTo, saved.relativePoint, saved.x, saved.y)
+    elseif saved and saved.point then
+        TransmogFrame:SetPoint(saved.point, UIParent, saved.relativePoint, saved.x, saved.y)
+    else
+        TransmogFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    end
+    TransmogFrame:SetFrameStrata(saved and saved.strata or "MEDIUM")
+    if saved and saved.level then TransmogFrame:SetFrameLevel(saved.level) end
+    matchSets()
     TransmogFrame:RegisterForDrag("LeftButton")
 end
 
