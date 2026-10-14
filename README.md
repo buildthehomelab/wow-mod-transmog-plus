@@ -69,6 +69,10 @@ it collects appearances the retail way (see below) and ships a migration from mo
 - `/transmog`, or a key bound under Key Bindings > Transmog, opens the transmog window
   anywhere, no NPC needed (switch off with `Transmog.OpenAnywhere = 0`). `/transmog anchor`
   moves the new-appearance alert.
+- With the [Journal](https://github.com/buildthehomelab/wow-mod-forever-journal) addon installed,
+  the transmog window is also the Journal's **Appearances** tab, beside its dungeons, mounts and
+  pets. It opens there the way `/transmog` does, so it needs `Transmog.OpenAnywhere = 1`; with it
+  off the tab says to visit a Transmogrifier.
 - Preview tiles frame the part of the body the slot covers; weapon tiles zoom on the hand
   holding the weapon. If a race frames badly, `/transmog camera <depth> <side> <height>
   [rotation]` nudges the selected slot's tiles for the session (`/transmog camera reset` undoes

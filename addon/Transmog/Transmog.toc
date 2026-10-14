@@ -1,7 +1,8 @@
 ## Interface: 30300
 ## Title: Transmog
-## Version: 1.10.1
-## Notes: Transmog UI, ported from CMaNGOS to AzerothCore mod-transmog-plus
+## Version: 1.11.0
+## Notes: Transmog UI, ported from CMaNGOS to AzerothCore mod-transmog-plus. With the Journal addon it is also the Journal's Appearances tab.
+## OptionalDeps: Journal
 ## SavedVariables: transmogSetBonusTiers
 ## SavedVariablesPerCharacter: transmogOutfits, transmogOutfitsSynced
 core\bootstrap.lua
@@ -34,3 +35,4 @@ ui\tooltips.lua
 ui\animations.lua
 core\event_handlers.lua
 transmog.xml
+ui\journal_tab.lua
