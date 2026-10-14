@@ -387,7 +387,8 @@ function Transmog:InitSetsView()
     frame:SetPoint("TOPLEFT", TransmogFrame, "TOPLEFT", 257, -80)
     frame:SetWidth(456)
     frame:SetHeight(388)
-    frame:SetFrameStrata("MEDIUM")
+    -- The window's own strata: it is higher while the window sits in the Journal (ui/journal_tab.lua).
+    frame:SetFrameStrata(TransmogFrame:GetFrameStrata())
     frame:SetFrameLevel(TransmogFrame:GetFrameLevel() + 2)
     frame:Hide()
 
