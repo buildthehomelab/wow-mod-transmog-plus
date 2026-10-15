@@ -7,6 +7,7 @@
 #include "Util.h"
 #include "Tokenize.h"
 #include "DBCStores.h"
+#include "Timer.h"
 #include <sstream>
 #include <vector>
 #include <string>
@@ -15,6 +16,7 @@
 #include <cctype>
 #include <charconv>
 #include <system_error>
+#include <unordered_map>
 
 // The addon protocol is carried through player chat messages using colon-delimited fields.
 namespace TransmogAddon
@@ -27,6 +29,54 @@ namespace TransmogAddon
     // Most missing looks sent for one request; a search narrows the rest.
     constexpr size_t MAX_MISSING = 1200;
     constexpr size_t MAX_QUERY = 40;
+
+    // GetMissing and GetAvailableTransmogs walk every look on the world thread, GetForms answers with
+    // hundreds of messages, and the outfit commands query the database. Addon whispers are never muted
+    // by the chat flood check, so each character gets a budget. The burst covers logging in and syncing
+    // 50 old outfits, or opening the window three times and applying a full set; scripted loops run out.
+    constexpr float REQUEST_BURST = 40.0f;
+    constexpr float REQUEST_RATE = 4.0f;
+
+    struct RequestBudget
+    {
+        float tokens = REQUEST_BURST;
+        uint32 lastRefill = 0;
+    };
+
+    std::unordered_map<ObjectGuid::LowType, RequestBudget> sBudgets;
+
+    bool TakeToken(RequestBudget& budget, float cost)
+    {
+        uint32 now = getMSTime();
+        if (budget.lastRefill)
+            budget.tokens = std::min(REQUEST_BURST, budget.tokens + getMSTimeDiff(budget.lastRefill, now) * REQUEST_RATE / 1000.0f);
+        budget.lastRefill = now;
+        if (budget.tokens < cost)
+            return false;
+        budget.tokens -= cost;
+        return true;
+    }
+
+    // The addon can't ask again for a dropped request, so whatever it sends in a row stays cheap:
+    // Apply goes out once per slot, the old-outfit sync sends up to 50 SaveOutfit at once, and
+    // tooltips ask once per item they haven't seen.
+    float CostOf(std::string const& command)
+    {
+        if (command == "GetForms")
+            return 4.0f;
+        if (command == "GetMissing" || command == "GetAvailableTransmogs" || command == "GetOutfits")
+            return 2.0f;
+        if (command == "SaveOutfit" || command == "Apply" || command == "Remove" || command == "ApplyIllusion"
+            || command == "GetSources" || command == "GetCollectionStatus" || command == "GetTransmogStatus"
+            || command == "CalculateCost")
+            return 0.5f;
+        return 1.0f;
+    }
+
+    void ForgetBudget(Player* player)
+    {
+        sBudgets.erase(player->GetGUID().GetCounter());
+    }
 
     // Reject partial numeric tokens so malformed addon requests cannot be accepted.
     bool ParseUint32(std::string_view text, uint32& value)
@@ -727,6 +777,10 @@ namespace TransmogAddon
         std::string command = colon == std::string::npos ? message : message.substr(0, colon);
         std::string args = colon == std::string::npos ? std::string() : message.substr(colon + 1);
 
+        // Dropped without an answer: the addon only gets here by sending far faster than its UI does.
+        if (!TakeToken(sBudgets[player->GetGUID().GetCounter()], CostOf(command)))
+            return;
+
         if (command == "GetTransmogStatus")
             HandleGetTransmogStatus(player, args);
         // Keep tooltip collection requests on the same authenticated addon channel.
@@ -774,8 +828,14 @@ class TransmogAddonProtocolScript : public PlayerScript
 public:
     TransmogAddonProtocolScript() : PlayerScript("TransmogAddonProtocolScript",
         {
-            PLAYERHOOK_CAN_PLAYER_USE_PRIVATE_CHAT
+            PLAYERHOOK_CAN_PLAYER_USE_PRIVATE_CHAT,
+            PLAYERHOOK_ON_LOGOUT
         }) { }
+
+    void OnPlayerLogout(Player* player) override
+    {
+        TransmogAddon::ForgetBudget(player);
+    }
 
 // Consume addon whisper commands without interfering with ordinary player chat.
     bool OnPlayerCanUseChat(Player* player, uint32 /*type*/, uint32 lang, std::string& msg, Player* receiver) override
