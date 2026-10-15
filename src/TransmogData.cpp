@@ -74,7 +74,7 @@ void Transmog::QueueBotSlotLoad(Player* player)
             std::array<uint32, 2> localIllusions{ 0, 0 };
             do
             {
-                if ((*result)[0].Get<uint32>() == 0)
+                if ((*result)[0].Get<uint64>() == 0) // literal column: BIGINT
                     ReadSlotRow(localSlots, (*result)[1].Get<uint8>(), (*result)[2].Get<uint32>());
                 else
                     ReadIllusionRow(localIllusions, (*result)[1].Get<uint8>(), (*result)[2].Get<uint32>());
