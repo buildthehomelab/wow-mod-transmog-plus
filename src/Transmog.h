@@ -293,6 +293,8 @@ public:
     TransmogApplyResult ApplyAppearance(Player* player, uint8 slot, uint32 fakeEntry);
 
     void LoadPlayerSlots(ObjectGuid guid);
+    // Async slot load for bot sessions (one query instead of two, applied from the bot's session callbacks).
+    void QueueBotSlotLoad(Player* player);
     void UnloadPlayerSlots(ObjectGuid guid);
     void SetSlotAppearance(Player* player, uint8 slot, uint32 fakeEntry);
     uint32 GetSlotAppearance(ObjectGuid guid, uint8 slot) const;
