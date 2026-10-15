@@ -1,7 +1,8 @@
 local Transmog = _G.Transmog
 
 -- Forms: druid shapeshift looks, one choice per form, like the retail barber shop. The server
--- sends every look (Form:<display>:<unlocked>:<phase>:<form>:<preview creature>:<name>) and the
+-- sends every look (Form:<display>:<unlocked>:<phase>:<form>:<preview creature>:<name>), followed
+-- by FormSpell:<display>:<spell id> for a look that comes with a spell (a mount), and the
 -- current choice per form. Tiles preview each look through a creature that uses its display
 -- (3.3.5 model frames can't show a display id); locked looks show dimmed, with a padlock.
 -- Shamans get the same tab as Totems: one look per totem element in place of the forms.
@@ -51,6 +52,9 @@ local function formInfo(key)
 end
 
 function Transmog:FormUnlockHint(entry)
+    if entry.spell then
+        return "Comes with " .. entry.spell .. "."
+    end
     if entry.phase and entry.phase > 0 then
         local names = self.PHASE_NAMES or {}
         return "Unlocks when you clear " .. (names[entry.phase] or ("progression phase " .. entry.phase)) .. "."
@@ -186,6 +190,14 @@ function Transmog:OnForm(display, unlocked, phase, form, preview, name)
     table.insert(self.formList, {
         id = display, unlocked = unlocked == 1, phase = phase, form = form, preview = preview, name = name,
     })
+end
+
+-- Always right after its Form line. The name comes from the client's own Spell.dbc.
+function Transmog:OnFormSpell(display, spellId)
+    local entry = self.formList and self.formList[#self.formList]
+    if entry and entry.id == display and spellId then
+        entry.spell = GetSpellInfo(spellId) or "a spell you haven't learned"
+    end
 end
 
 function Transmog:OnFormsLoaded()

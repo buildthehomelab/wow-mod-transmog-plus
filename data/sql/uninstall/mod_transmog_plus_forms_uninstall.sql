@@ -5,8 +5,9 @@
 -- behind unused.
 
 -- acore_world
+DROP TABLE IF EXISTS `mod_transmog_plus_form_spells`;
 DROP TABLE IF EXISTS `mod_transmog_plus_forms`;
-DELETE FROM `module_string` WHERE `module` = 'mod-transmog-plus' AND `id` IN (24, 25, 26);
+DELETE FROM `module_string` WHERE `module` = 'mod-transmog-plus' AND `id` IN (24, 25, 26, 27);
 
 -- acore_characters
 -- DROP TABLE IF EXISTS `mod_transmog_plus_form_choice`;

@@ -4,6 +4,7 @@
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "SpellAuraEffects.h"
+#include "SpellMgr.h"
 #include "TemporarySummon.h"
 #include <array>
 #include <memory>
@@ -11,7 +12,8 @@
 // Druid form looks: retail form models (from the realm's client patch) shown in place of the
 // stock bear, cat, travel, aquatic, flight, moonkin and tree models. The druid picks one look per
 // form in the Forms tab; looks unlock with individual progression phases, and the stock look is
-// always there. The look goes on whenever the core sets the form's stock model.
+// always there. A look can also wait for a spell (mod_transmog_plus_form_spells): a mount module
+// lists its mount's spell there, so a druid who knows the mount has its flight form. The look goes on whenever the core sets the form's stock model.
 //
 // Shaman totem looks work the same way, with the four totem elements in place of the forms: the
 // shaman picks one look per element in the Totems tab, and it goes on the totem when the core
@@ -150,7 +152,9 @@ void Transmog::LoadForms()
     if (!FormsEnable && !TotemsEnable && !DemonsEnable)
         return;
 
-    QueryResult result = WorldDatabase.Query("SELECT DisplayId, Form, Name, UnlockPhase, PreviewCreature FROM mod_transmog_plus_forms ORDER BY SortOrder, DisplayId");
+    QueryResult result = WorldDatabase.Query("SELECT f.DisplayId, f.Form, f.Name, f.UnlockPhase, f.PreviewCreature, IFNULL(s.SpellId, 0) "
+        "FROM mod_transmog_plus_forms f LEFT JOIN mod_transmog_plus_form_spells s ON s.DisplayId = f.DisplayId "
+        "ORDER BY f.SortOrder, f.DisplayId");
     if (!result)
     {
         LOG_INFO("module", "mod-transmog-plus: no druid form, shaman totem or warlock demon looks (no look pack installed)");
@@ -166,10 +170,17 @@ void Transmog::LoadForms()
         entry.name = fields[2].Get<std::string>();
         entry.unlockPhase = fields[3].Get<uint8>();
         entry.previewCreature = fields[4].Get<uint32>();
+        entry.unlockSpell = fields[5].Get<uint32>();
 
         if (!entry.displayId || entry.kind == FORM_KIND_NONE)
         {
             LOG_ERROR("module", "mod-transmog-plus: form look {} skipped, unknown form '{}'", entry.displayId, fields[1].Get<std::string>());
+            continue;
+        }
+        // Nobody could ever unlock it: its module's spell rows are missing.
+        if (entry.unlockSpell && !sSpellMgr->GetSpellInfo(entry.unlockSpell))
+        {
+            LOG_ERROR("module", "mod-transmog-plus: form look {} skipped, its unlock spell {} doesn't exist", entry.displayId, entry.unlockSpell);
             continue;
         }
         uint8 owner = FormKindClass(entry.kind);
@@ -219,6 +230,8 @@ void Transmog::UnloadPlayerForms(ObjectGuid guid)
 
 bool Transmog::IsFormUnlocked(Player const* player, FormEntry const& entry) const
 {
+    if (entry.unlockSpell && !player->HasSpell(entry.unlockSpell))
+        return false;
     return entry.unlockPhase <= GetProgressionPhase(player);
 }
 
@@ -406,6 +419,21 @@ void Transmog::AnnounceFormUnlocks(Player* player, uint8 phase)
     TransmogAddon::SendFormsUnlocked(player, phase);
 }
 
+// After learning a spell: each look of the player's class it unlocks, in chat and to the addon.
+void Transmog::AnnounceSpellFormUnlocks(Player* player, uint32 spellId)
+{
+    bool any = false;
+    for (FormEntry const& entry : forms)
+    {
+        if (entry.unlockSpell != spellId || FormKindClass(entry.kind) != player->getClass() || !IsFormUnlocked(player, entry))
+            continue;
+        ChatHandler(player->GetSession()).PSendSysMessage("|cffff80ff[{}]|r {}", entry.name, Tstr(player->GetSession(), LANG_TRANSMOG_FORM_LOOK_UNLOCKED));
+        any = true;
+    }
+    if (any)
+        TransmogAddon::SendFormsUnlocked(player, GetProgressionPhase(player));
+}
+
 class TransmogFormPlayerScript : public PlayerScript
 {
 public:
@@ -414,7 +442,8 @@ public:
         PLAYERHOOK_ON_LOGOUT,
         PLAYERHOOK_ON_DELETE,
         PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST,
-        PLAYERHOOK_ON_AFTER_GUARDIAN_INIT_STATS_FOR_LEVEL
+        PLAYERHOOK_ON_AFTER_GUARDIAN_INIT_STATS_FOR_LEVEL,
+        PLAYERHOOK_ON_LEARN_SPELL
     }) { }
 
     void OnPlayerLogin(Player* player) override
@@ -459,6 +488,13 @@ public:
         uint32 base = sTransmog->BackpackPhaseQuestBase;
         if (id > base && id <= base + MAX_PHASE)
             sTransmog->AnnounceFormUnlocks(player, uint8(id - base));
+    }
+
+    // Learning a spell some look waits for (a mount that brings its form look along).
+    void OnPlayerLearnSpell(Player* player, uint32 spellId) override
+    {
+        if (Tracked(player))
+            sTransmog->AnnounceSpellFormUnlocks(player, spellId);
     }
 };
 

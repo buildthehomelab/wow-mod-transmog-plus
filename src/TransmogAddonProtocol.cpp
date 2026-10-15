@@ -512,7 +512,9 @@ namespace TransmogAddon
     // Every look of the player's class (druid forms, shaman totems, warlock demons), unlocked or
     // not, in display order: "Forms:start:<phase>",
     // "Form:<display>:<unlocked>:<phase>:<form>:<preview creature>:<name>"..., "Forms:end", then
-    // the choices. Off, or a class without looks, sends nothing: the addon hides the tab.
+    // the choices. A look that also waits for a spell is followed by "FormSpell:<display>:<spell
+    // id>": numbers only, so older addons' substring checks never match it, and the addon reads
+    // the name from the client's Spell.dbc. Off, or a class without looks, sends nothing: the addon hides the tab.
     void HandleGetForms(Player* player, std::string const&)
     {
         if (!sTransmog->HasFormLooks(player))
@@ -536,6 +538,8 @@ namespace TransmogAddon
                 + std::to_string(entry.unlockPhase) + ":" + Transmog::FormKindName(entry.kind) + ":"
                 + std::to_string(entry.previewCreature) + ":" + entry.name;
             SendToClient(player, line.substr(0, MAX_PAYLOAD));
+            if (entry.unlockSpell)
+                SendToClient(player, "FormSpell:" + std::to_string(entry.displayId) + ":" + std::to_string(entry.unlockSpell));
         }
         SendToClient(player, "Forms:end");
         SendFormStatus(player);
