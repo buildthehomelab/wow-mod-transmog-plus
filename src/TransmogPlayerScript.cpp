@@ -19,6 +19,14 @@ public:
 // Load shared account data before applying stored visible appearances.
     void OnPlayerLogin(Player* player) override
     {
+        // Bots skip the account collection (alt bots load it lazily when they collect)
+        // and load their slots without blocking the thread that logs them in.
+        if (Transmog_IsBotSession(player))
+        {
+            sTransmog->QueueBotSlotLoad(player);
+            return;
+        }
+
         uint32 accountId = player->GetSession()->GetAccountId();
         sTransmog->LoadCollectionForAccount(accountId);
 
@@ -37,7 +45,10 @@ public:
     {
         sTransmog->UnloadPlayerSlots(player->GetGUID());
         sTransmog->ClearSelection(player->GetGUID());
-        sTransmog->UnrefCollectionForAccount(player->GetSession()->GetAccountId());
+
+        // Bots never took a collection reference at login.
+        if (!Transmog_IsBotSession(player))
+            sTransmog->UnrefCollectionForAccount(player->GetSession()->GetAccountId());
     }
 
 // Character-owned slot records must not survive character deletion.

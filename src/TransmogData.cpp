@@ -1,5 +1,25 @@
 #include "Transmog.h"
 
+namespace
+{
+// Ignore stale rows so invalid database data cannot affect login.
+void ReadSlotRow(std::array<uint32, EQUIPMENT_SLOT_END>& slots, uint8 slot, uint32 fakeEntry)
+{
+    if (slot >= EQUIPMENT_SLOT_END)
+        return;
+    if (fakeEntry == HIDDEN_ITEM_ID && !TransmogRules_IsArmorSlot(slot))
+        return;
+    if (fakeEntry == HIDDEN_ITEM_ID || sObjectMgr->GetItemTemplate(fakeEntry))
+        slots[slot] = fakeEntry;
+}
+
+void ReadIllusionRow(std::array<uint32, 2>& illusions, uint8 slot, uint32 enchantId)
+{
+    if (Transmog::IsIllusionSlot(slot) && (enchantId == HIDDEN_ILLUSION_ID || Transmog::IsIllusionEnchant(enchantId)))
+        illusions[slot - EQUIPMENT_SLOT_MAINHAND] = enchantId;
+}
+}
+
 // Restore slot overrides before visible-item refreshes run for the player.
 void Transmog::LoadPlayerSlots(ObjectGuid guid)
 {
@@ -11,15 +31,7 @@ void Transmog::LoadPlayerSlots(ObjectGuid guid)
     {
         do
         {
-            uint8 slot = (*result)[0].Get<uint8>();
-            uint32 fakeEntry = (*result)[1].Get<uint32>();
-// Ignore stale rows so invalid database data cannot affect login.
-            if (slot >= EQUIPMENT_SLOT_END)
-                continue;
-            if (fakeEntry == HIDDEN_ITEM_ID && !TransmogRules_IsArmorSlot(slot))
-                continue;
-            if (fakeEntry == HIDDEN_ITEM_ID || sObjectMgr->GetItemTemplate(fakeEntry))
-                localSlots[slot] = fakeEntry;
+            ReadSlotRow(localSlots, (*result)[0].Get<uint8>(), (*result)[1].Get<uint32>());
         } while (result->NextRow());
     }
 
@@ -29,16 +41,53 @@ void Transmog::LoadPlayerSlots(ObjectGuid guid)
     {
         do
         {
-            uint8 slot = (*result)[0].Get<uint8>();
-            uint32 enchantId = (*result)[1].Get<uint32>();
-            if (IsIllusionSlot(slot) && (enchantId == HIDDEN_ILLUSION_ID || IsIllusionEnchant(enchantId)))
-                localIllusions[slot - EQUIPMENT_SLOT_MAINHAND] = enchantId;
+            ReadIllusionRow(localIllusions, (*result)[0].Get<uint8>(), (*result)[1].Get<uint32>());
         } while (result->NextRow());
     }
 
     std::unique_lock<std::shared_mutex> lock(slotMapMutex);
     slotMap[guid] = localSlots;
     illusionMap[guid] = localIllusions;
+}
+
+// Bots load their slots asynchronously. The callback runs from the session's own query
+// processor, which Map::Update drives for bots too.
+void Transmog::QueueBotSlotLoad(Player* player)
+{
+    WorldSession* session = player->GetSession();
+    ObjectGuid const guid = player->GetGUID();
+    session->GetQueryProcessor().AddCallback(CharacterDatabase.AsyncQuery(Acore::StringFormat(
+        "SELECT 0, Slot, FakeEntry FROM mod_transmog_plus WHERE Owner = {0} "
+        "UNION ALL SELECT 1, Slot, EnchantId FROM mod_transmog_plus_illusion_slots WHERE Owner = {0}", guid.GetCounter()))
+        .WithCallback([this, session, guid](QueryResult result)
+        {
+            // Random bots have no rows; alt bots only when transmogged as a player.
+            if (!result)
+                return;
+
+            Player* player = session->GetPlayer();
+            if (!player || player->GetGUID() != guid)
+                return;
+
+            std::array<uint32, EQUIPMENT_SLOT_END> localSlots;
+            localSlots.fill(0);
+            std::array<uint32, 2> localIllusions{ 0, 0 };
+            do
+            {
+                if ((*result)[0].Get<uint64>() == 0) // literal column: BIGINT
+                    ReadSlotRow(localSlots, (*result)[1].Get<uint8>(), (*result)[2].Get<uint32>());
+                else
+                    ReadIllusionRow(localIllusions, (*result)[1].Get<uint8>(), (*result)[2].Get<uint32>());
+            } while (result->NextRow());
+
+            {
+                std::unique_lock<std::shared_mutex> lock(slotMapMutex);
+                slotMap[guid] = localSlots;
+                illusionMap[guid] = localIllusions;
+            }
+
+            RefreshAllSlots(player);
+        }));
 }
 
 // Slot state is removed from memory when the player leaves the world.
