@@ -79,7 +79,8 @@ enum TransmogString : uint32
     LANG_TRANSMOG_BACKPACK_DISABLED,
     LANG_TRANSMOG_FORMS_UNLOCKED,
     LANG_TRANSMOG_TOTEMS_UNLOCKED,
-    LANG_TRANSMOG_DEMONS_UNLOCKED
+    LANG_TRANSMOG_DEMONS_UNLOCKED,
+    LANG_TRANSMOG_FORM_LOOK_UNLOCKED
 };
 
 inline std::string const& Tstr(WorldSession* session, uint32 id)
@@ -180,7 +181,8 @@ public:
     void SendBackpackIntroMail(Player* player);
 
     // Druid form looks, shaman totem looks and warlock demon looks (TransmogForms.cpp): one choice
-    // per form, totem element or demon, unlocked by individual progression phase. A totem element
+    // per form, totem element or demon, unlocked by individual progression phase, and some also by
+    // knowing a spell (mod_transmog_plus_form_spells: a mount that brings its form look along). A totem element
     // or a demon is a form kind like any other; only how the look goes on differs. The looks
     // themselves come from look packs, modules of their own (mod-retail-druid-forms,
     // mod-retail-shaman-totems, mod-retail-warlock-pets) that fill mod_transmog_plus_forms:
@@ -209,6 +211,7 @@ public:
         FormKind kind = FORM_KIND_NONE;
         std::string name;
         uint8 unlockPhase = 0;      // individual progression phase that unlocks it; 0 = from the start
+        uint32 unlockSpell = 0;     // and a spell the character has to know; 0 = none
         uint32 previewCreature = 0; // creature_template entry using the display, for the addon preview
     };
     // Loaded at startup, read-only afterwards.
@@ -239,6 +242,7 @@ public:
     void ApplyDemonLook(Creature* demon);
     void ApplyDemonLooks(Player* player);
     void AnnounceFormUnlocks(Player* player, uint8 phase);
+    void AnnounceSpellFormUnlocks(Player* player, uint32 spellId);
 
     // Account appearance data is shared while logged-in characters reference it.
     std::unordered_map<uint32, std::unordered_set<uint32>> collectionCache;

@@ -53,4 +53,5 @@ INSERT INTO `module_string` (`module`, `id`, `string`) VALUES
 ('mod-transmog-plus', 23, 'Backpacks aren\'t available on this realm.'),
 ('mod-transmog-plus', 24, 'new druid form looks unlocked. Pick them in the Forms tab of the Transmogrify window (/transmog).'),
 ('mod-transmog-plus', 25, 'new totem looks unlocked. Pick them in the Totems tab of the Transmogrify window (/transmog).'),
-('mod-transmog-plus', 26, 'new demon looks unlocked. Pick them in the Demons tab of the Transmogrify window (/transmog).');
+('mod-transmog-plus', 26, 'new demon looks unlocked. Pick them in the Demons tab of the Transmogrify window (/transmog).'),
+('mod-transmog-plus', 27, 'look unlocked. Pick it in the Transmogrify window (/transmog).');

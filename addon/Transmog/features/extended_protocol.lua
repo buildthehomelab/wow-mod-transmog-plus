@@ -124,6 +124,13 @@ function Transmog:HandleExtendedMessage(message)
         end
         return true
     end
+    if startsWith(message, "FormSpell:") then
+        local id, spell = string.match(message, "^FormSpell:(%d+):(%d+)$")
+        if id then
+            self:OnFormSpell(tonumber(id), tonumber(spell))
+        end
+        return true
+    end
     if startsWith(message, "FormStatus:") then
         self:OnFormStatus(string.sub(message, 12))
         return true

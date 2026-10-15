@@ -63,6 +63,11 @@ it collects appearances the retail way (see below) and ships a migration from mo
   Upgrading from a version that shipped the looks itself: the rows stay in your database and
   keep working; install the packs to keep them up to date, or run the packs' uninstall SQL to
   drop them.
+- Looks that come with a spell: a row in the world table `mod_transmog_plus_form_spells`
+  (`DisplayId`, `SpellId`) makes a look wait for that spell as well as its phase, so a mount can
+  bring its form look along: [wow-mod-retail-pets](https://github.com/buildthehomelab/wow-mod-retail-pets)'
+  Whoofle Bramblewing mount is also a flight form look for every druid who knows it. Learning the
+  spell announces the look in chat, and a locked one says in the tab what it comes with.
 - Outfits are saved on the server for the whole account. Each character's old outfits are
   uploaded the first time it opens the window.
 - Transmog Sets browser in the addon.
