@@ -416,14 +416,17 @@ function Transmog:InitSetsView()
     listContainer:SetWidth(200)
     listContainer:SetHeight(348)
     listContainer:SetFrameLevel(frame:GetFrameLevel() + 1)
-    listContainer:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 12,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 }
-    })
-    listContainer:SetBackdropColor(0.05, 0.05, 0.08, 0.85)
-    listContainer:SetBackdropBorderColor(0.4, 0.4, 0.5, 0.9)
+    -- DragonUI's marble inset when DragonUI is loaded (ui/dragonui_skin.lua).
+    if not Transmog.SkinInset(listContainer) then
+        listContainer:SetBackdrop({
+            bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true, tileSize = 16, edgeSize = 12,
+            insets = { left = 3, right = 3, top = 3, bottom = 3 }
+        })
+        listContainer:SetBackdropColor(0.05, 0.05, 0.08, 0.85)
+        listContainer:SetBackdropBorderColor(0.4, 0.4, 0.5, 0.9)
+    end
     listContainer:EnableMouseWheel(true)
     listContainer:SetScript("OnMouseWheel", function(self, delta)
         local bar = TransmogSetScrollFrameScrollBar
@@ -447,6 +450,7 @@ function Transmog:InitSetsView()
             bar:SetValue(bar:GetValue() - delta * SET_BUTTON_HEIGHT)
         end
     end)
+    Transmog.SkinScrollBar(scrollFrame, listContainer)
     self.scrollFrame = scrollFrame
 
     -- Set List Buttons
@@ -536,14 +540,17 @@ function Transmog:InitSetsView()
     detail:SetWidth(250)
     detail:SetHeight(348)
     detail:SetFrameLevel(frame:GetFrameLevel() + 1)
-    detail:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 12,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 }
-    })
-    detail:SetBackdropColor(0.05, 0.05, 0.08, 0.85)
-    detail:SetBackdropBorderColor(0.4, 0.4, 0.5, 0.9)
+    -- DragonUI's marble inset when DragonUI is loaded (ui/dragonui_skin.lua).
+    if not Transmog.SkinInset(detail) then
+        detail:SetBackdrop({
+            bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true, tileSize = 16, edgeSize = 12,
+            insets = { left = 3, right = 3, top = 3, bottom = 3 }
+        })
+        detail:SetBackdropColor(0.05, 0.05, 0.08, 0.85)
+        detail:SetBackdropBorderColor(0.4, 0.4, 0.5, 0.9)
+    end
     self.detailFrame = detail
     _G["TransmogSetDetailFrame"] = detail
 
