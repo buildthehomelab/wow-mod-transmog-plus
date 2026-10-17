@@ -8,10 +8,16 @@ local Transmog = _G.Transmog
 
 if not (Journal and Journal.RegisterTab and (Journal.API or 0) >= 1 and TransmogFrame) then return end
 
--- With DragonUI the window drops its own frame in the Journal (Transmog.SetDockedChrome in
--- ui/dragonui_skin.lua). Its top ~47px then hold nothing but the old title bar, so it moves up
--- by about half that to centre the tabs-to-buttons block in the Journal's content area.
-local BARE_RAISE = 20
+-- The window is a fixed 750x506 layout, much smaller than the Journal's content area, so in the
+-- Journal it is scaled up to fill it. With DragonUI it drops its own frame there
+-- (Transmog.SetDockedChrome in ui/dragonui_skin.lua) and only its content counts: from the tabs
+-- (47 down) to the pane's bottom edge (8 up), and from the model window's left edge (20) to the
+-- Collected bar's right end (590 + 150), which reaches past the pane's.
+local FRAME_W, FRAME_H = 750, 506
+local BARE_LEFT, BARE_TOP, BARE_RIGHT, BARE_BOTTOM = 20, 47, 740, 498
+-- Room left between the content and the Journal's edges, in the Journal's units.
+local FIT_MARGIN = 14
+local MAX_SCALE = 1.6
 
 local docked = false
 local bare = false
@@ -26,16 +32,33 @@ local function matchSets()
     end
 end
 
+-- Scales the window to the biggest size whose content fits the panel and centres that content.
+-- SetPoint offsets are in the window's own (scaled) units, so the centring offset is too.
+local function fit(panel)
+    local left, top, right, bottom = 0, 0, FRAME_W, FRAME_H
+    if bare then left, top, right, bottom = BARE_LEFT, BARE_TOP, BARE_RIGHT, BARE_BOTTOM end
+    local w, h = panel:GetWidth() or 0, panel:GetHeight() or 0
+    local scale = 1
+    if w > 0 and h > 0 then
+        scale = math.min((w - 2 * FIT_MARGIN) / (right - left), (h - 2 * FIT_MARGIN) / (bottom - top), MAX_SCALE)
+        if scale <= 0 then scale = 1 end
+    end
+    TransmogFrame:SetScale(scale)
+    TransmogFrame:ClearAllPoints()
+    TransmogFrame:SetPoint("CENTER", panel, "CENTER",
+        FRAME_W / 2 - (left + right) / 2, (top + bottom) / 2 - FRAME_H / 2)
+end
+
 local function dock(panel)
     if docked then return end
     docked = true
     local point, relativeTo, relativePoint, x, y = TransmogFrame:GetPoint(1)
     saved = { point = point, relativeTo = relativeTo, relativePoint = relativePoint, x = x, y = y,
-        strata = TransmogFrame:GetFrameStrata(), level = TransmogFrame:GetFrameLevel() }
+        strata = TransmogFrame:GetFrameStrata(), level = TransmogFrame:GetFrameLevel(),
+        scale = TransmogFrame:GetScale() }
     TransmogFrame:SetParent(panel)
     bare = Transmog.SetDockedChrome and Transmog.SetDockedChrome(true) or false
-    TransmogFrame:ClearAllPoints()
-    TransmogFrame:SetPoint("CENTER", panel, "CENTER", 0, bare and BARE_RAISE or 0)
+    fit(panel)
     -- Bare, its empty top edge overlaps the Journal's title bar; let clicks there reach it.
     if bare then TransmogFrame:EnableMouse(false) end
     TransmogFrame:SetFrameStrata(panel:GetFrameStrata())
@@ -54,6 +77,7 @@ local function undock()
         bare = false
     end
     TransmogFrame:SetParent(UIParent)
+    TransmogFrame:SetScale(saved and saved.scale or 1)
     TransmogFrame:ClearAllPoints()
     if saved and saved.point and saved.relativeTo ~= nil and saved.relativeTo ~= TransmogFrame then
         TransmogFrame:SetPoint(saved.point, saved.relativeTo, saved.relativePoint, saved.x, saved.y)
@@ -74,6 +98,11 @@ Journal.RegisterTab({
     order = 70,
     icon = "Interface\\Icons\\INV_Chest_Cloth_17",
     build = function (panel)
+        -- The first open docks before the panel's anchors have resolved, when it still reads 0 wide
+        -- and fit() falls back to scale 1; this fits it once the panel has its real size.
+        panel:HookScript("OnSizeChanged", function (self)
+            if docked then fit(self) end
+        end)
         status = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         status:SetPoint("CENTER", panel, "CENTER", 0, 0)
         status:SetWidth(460)
