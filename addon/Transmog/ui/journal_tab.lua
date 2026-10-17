@@ -8,7 +8,13 @@ local Transmog = _G.Transmog
 
 if not (Journal and Journal.RegisterTab and (Journal.API or 0) >= 1 and TransmogFrame) then return end
 
+-- With DragonUI the window drops its own frame in the Journal (Transmog.SetDockedChrome in
+-- ui/dragonui_skin.lua). Its top ~47px then hold nothing but the old title bar, so it moves up
+-- by about half that to centre the tabs-to-buttons block in the Journal's content area.
+local BARE_RAISE = 20
+
 local docked = false
+local bare = false
 local status
 local saved -- where the window was before it went into the Journal
 
@@ -27,8 +33,11 @@ local function dock(panel)
     saved = { point = point, relativeTo = relativeTo, relativePoint = relativePoint, x = x, y = y,
         strata = TransmogFrame:GetFrameStrata(), level = TransmogFrame:GetFrameLevel() }
     TransmogFrame:SetParent(panel)
+    bare = Transmog.SetDockedChrome and Transmog.SetDockedChrome(true) or false
     TransmogFrame:ClearAllPoints()
-    TransmogFrame:SetPoint("CENTER", panel, "CENTER", 0, 0)
+    TransmogFrame:SetPoint("CENTER", panel, "CENTER", 0, bare and BARE_RAISE or 0)
+    -- Bare, its empty top edge overlaps the Journal's title bar; let clicks there reach it.
+    if bare then TransmogFrame:EnableMouse(false) end
     TransmogFrame:SetFrameStrata(panel:GetFrameStrata())
     TransmogFrame:SetFrameLevel(panel:GetFrameLevel() + 5)
     matchSets()
@@ -39,6 +48,11 @@ end
 local function undock()
     if not docked then return end
     docked = false
+    if bare then
+        Transmog.SetDockedChrome(false)
+        TransmogFrame:EnableMouse(true)
+        bare = false
+    end
     TransmogFrame:SetParent(UIParent)
     TransmogFrame:ClearAllPoints()
     if saved and saved.point and saved.relativeTo ~= nil and saved.relativeTo ~= TransmogFrame then
@@ -65,9 +79,11 @@ Journal.RegisterTab({
         status:SetWidth(460)
     end,
     onShow = function (panel)
-        status:SetText("Opening your appearances...\n\n|cff9d9d9dIf nothing opens, this realm only lets you change appearances at a Transmogrifier.|r")
         dock(panel)
-        if not TransmogFrame:IsShown() then
+        if TransmogFrame:IsShown() then
+            status:SetText("")
+        else
+            status:SetText("Opening your appearances...\n\n|cff9d9d9dIf nothing opens, this realm only lets you change appearances at a Transmogrifier.|r")
             SendAddonMessage(Transmog.prefix, "RequestPortable", "WHISPER", UnitName("player"))
         end
     end,
@@ -76,6 +92,11 @@ Journal.RegisterTab({
         undock()
     end,
 })
+
+-- Without its own frame the window no longer covers the panel, so the waiting text goes once it opens.
+TransmogFrame:HookScript("OnShow", function ()
+    if docked and status then status:SetText("") end
+end)
 
 -- Closing the transmog window while it's in the Journal leaves the tab with a way back.
 TransmogFrame:HookScript("OnHide", function ()
