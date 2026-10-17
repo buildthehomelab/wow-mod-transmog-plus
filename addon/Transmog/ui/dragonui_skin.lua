@@ -64,7 +64,8 @@ rock:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -21)
 rock:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
 
 local streaks = frame:CreateTexture(nil, "BACKGROUND", nil, -7)
-if D:SafeSetAtlas(streaks, "_UI-Frame-TopTileStreaks") then
+local hasStreaks = D:SafeSetAtlas(streaks, "_UI-Frame-TopTileStreaks")
+if hasStreaks then
     streaks:SetHorizTile(true)
     streaks:SetHeight(43)
     streaks:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -21)
@@ -137,4 +138,18 @@ for i = 1, #regions do
             r:SetTexture(0, 0, 0, 0.55)
         end
     end
+end
+
+-- Docked in the Journal's Appearances tab (ui/journal_tab.lua) the Journal's own DragonUI window
+-- is the frame: the metal, the rock and streaks behind it, the portrait, title and close button
+-- all go, and the model window and appearance pane sit straight on the Journal's rock, as
+-- retail's Appearances tab does in its Collections window. Returns true when it went bare.
+local windowParts = { rock, chrome, TransmogFrameCloseButton }
+if hasStreaks then windowParts[#windowParts + 1] = streaks end
+
+function Transmog.SetDockedChrome(docked)
+    for i = 1, #windowParts do
+        if docked then windowParts[i]:Hide() else windowParts[i]:Show() end
+    end
+    return true
 end
