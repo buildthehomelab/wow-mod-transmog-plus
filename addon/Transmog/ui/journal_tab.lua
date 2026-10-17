@@ -10,11 +10,11 @@ if not (Journal and Journal.RegisterTab and (Journal.API or 0) >= 1 and Transmog
 
 -- The window is a fixed 750x506 layout, much smaller than the Journal's content area, so in the
 -- Journal it is scaled up to fill it. With DragonUI it drops its own frame there
--- (Transmog.SetDockedChrome in ui/dragonui_skin.lua) and only its content counts: from the
--- Collected bar (49 down) to the pane's bottom edge (8 up), and from the model window's left
--- edge (20) to the pane's right edge (24 in).
+-- (Transmog.SetDockedChrome in ui/dragonui_skin.lua) and only its content counts: from the tabs
+-- (47 down) to the pane's bottom edge (8 up), and from the model window's left edge (20) to the
+-- Collected bar's right end (590 + 150), which reaches past the pane's.
 local FRAME_W, FRAME_H = 750, 506
-local BARE_LEFT, BARE_TOP, BARE_RIGHT, BARE_BOTTOM = 20, 49, 726, 498
+local BARE_LEFT, BARE_TOP, BARE_RIGHT, BARE_BOTTOM = 20, 47, 740, 498
 -- Room left between the content and the Journal's edges, in the Journal's units.
 local FIT_MARGIN = 14
 local MAX_SCALE = 1.6
@@ -98,7 +98,8 @@ Journal.RegisterTab({
     order = 70,
     icon = "Interface\\Icons\\INV_Chest_Cloth_17",
     build = function (panel)
-        -- Keeps filling the Journal if its window changes size.
+        -- The first open docks before the panel's anchors have resolved, when it still reads 0 wide
+        -- and fit() falls back to scale 1; this fits it once the panel has its real size.
         panel:HookScript("OnSizeChanged", function (self)
             if docked then fit(self) end
         end)
