@@ -9,8 +9,8 @@ local Transmog = _G.Transmog
 if not (Journal and Journal.RegisterTab and (Journal.API or 0) >= 1 and TransmogFrame) then return end
 
 -- The window is a fixed 750x506 layout, much smaller than the Journal's content area, so in the
--- Journal it is scaled up to fill it. With DragonUI it drops its own frame there
--- (Transmog.SetDockedChrome in ui/dragonui_skin.lua) and only its content counts: from the tabs
+-- Journal it is scaled up to fill it. It drops its own frame there (Transmog.SetDockedChrome in
+-- ui/dragonui_skin.lua, or ui/stock_skin.lua without DragonUI) and only its content counts: from the tabs
 -- (47 down) to the pane's bottom edge (8 up), and from the model window's left edge (20) to the
 -- Collected bar's right end (590 + 150), which reaches past the pane's.
 local FRAME_W, FRAME_H = 750, 506

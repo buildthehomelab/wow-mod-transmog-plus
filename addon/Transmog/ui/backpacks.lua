@@ -47,9 +47,7 @@ function Transmog:SetBackpacksTabActive(active)
     if not TransmogFrameBackpacksButton then
         return
     end
-    local texture = active and 'tab_active' or 'tab_inactive'
-    TransmogFrameBackpacksButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\' .. texture)
-    TransmogFrameBackpacksButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+    self:SetTabLook(TransmogFrameBackpacksButton, active)
     TransmogFrameBackpacksButtonText:SetText((active and HIGHLIGHT_FONT_COLOR_CODE or NORMAL_FONT_COLOR_CODE) .. 'Backpacks')
 end
 
@@ -175,9 +173,9 @@ function Transmog:RenderBackpacks()
             getglobal('TransmogLook' .. itemIndex .. 'ButtonRevert'):Hide()
             getglobal('TransmogLook' .. itemIndex .. 'ButtonCheck'):Hide()
             if entry.id == chosen then
-                button:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_selected')
+                Transmog:SetTileLook(button, true)
             else
-                button:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_normal')
+                Transmog:SetTileLook(button, false)
             end
 
             local hint

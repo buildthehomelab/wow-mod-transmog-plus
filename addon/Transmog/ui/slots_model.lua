@@ -165,10 +165,7 @@ function Transmog_Try(itemId, slotName, newReset)
     Transmog:UpdateSlotGlow(Transmog.currentTransmogSlotName, Transmog.currentTransmogSlot)
 
     for itemIndex, data in ipairs(Transmog.ItemButtons) do
-        getglobal('TransmogLook' .. itemIndex .. 'Button'):SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_normal')
-        if data.id == itemId then
-            getglobal('TransmogLook' .. itemIndex .. 'Button'):SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_selected')
-        end
+        Transmog:SetTileLook(getglobal('TransmogLook' .. itemIndex .. 'Button'), data.id == itemId)
         -- The item's own look offers a revert only while something else is staged.
         if data.reset then
             if Transmog.transmogStatusToServer[Transmog.currentTransmogSlot] ~= 0 then
@@ -241,7 +238,7 @@ end
 -- Resets all item button border textures to the normal state.
 function Transmog:hideItemBorders()
     for index, _ in ipairs(self.ItemButtons) do
-        getglobal('TransmogLook' .. index .. 'Button'):SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_normal')
+        Transmog:SetTileLook(getglobal('TransmogLook' .. index .. 'Button'), false)
 	end
 end
 
@@ -259,36 +256,31 @@ function selectTransmogSlot(InventorySlotId, slotName)
 
         Transmog.tab = 'items'
         Transmog:LeaveIllusionsView()
-        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
-        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        Transmog:SetTabLook(TransmogFrameItemsButton, true)
         TransmogFrameItemsButtonText:SetText(HIGHLIGHT_FONT_COLOR_CODE .. 'Items')
     end
 
     if Transmog.tab == 'forms' and InventorySlotId ~= -1 then
         Transmog.tab = 'items'
         Transmog:LeaveFormsView()
-        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
-        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        Transmog:SetTabLook(TransmogFrameItemsButton, true)
         TransmogFrameItemsButtonText:SetText(HIGHLIGHT_FONT_COLOR_CODE .. 'Items')
     end
 
     if Transmog.tab == 'backpacks' and InventorySlotId ~= -1 then
         Transmog.tab = 'items'
         Transmog:LeaveBackpacksView()
-        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
-        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        Transmog:SetTabLook(TransmogFrameItemsButton, true)
         TransmogFrameItemsButtonText:SetText(HIGHLIGHT_FONT_COLOR_CODE .. 'Items')
     end
 
     if Transmog.tab == 'sets' and InventorySlotId ~= -1 then
         Transmog.tab = 'items'
-        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
-        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        Transmog:SetTabLook(TransmogFrameItemsButton, true)
         TransmogFrameItemsButtonText:SetText(HIGHLIGHT_FONT_COLOR_CODE .. 'Items')
 
         if TransmogFrameSetsButton then
-            TransmogFrameSetsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
-            TransmogFrameSetsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+            Transmog:SetTabLook(TransmogFrameSetsButton, false)
             TransmogFrameSetsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Sets')
         end
 
@@ -453,13 +445,11 @@ function Transmog_switchTab(to)
         Transmog:LeaveFormsView()
     end
     if to == 'items' then
-        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
-        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        Transmog:SetTabLook(TransmogFrameItemsButton, true)
         TransmogFrameItemsButtonText:SetText(HIGHLIGHT_FONT_COLOR_CODE .. 'Items')
 
         if TransmogFrameSetsButton then
-            TransmogFrameSetsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
-            TransmogFrameSetsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+            Transmog:SetTabLook(TransmogFrameSetsButton, false)
             TransmogFrameSetsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Sets')
         end
 
@@ -475,13 +465,11 @@ function Transmog_switchTab(to)
             selectTransmogSlot(-1)
         end
     elseif to == 'sets' then
-        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
-        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        Transmog:SetTabLook(TransmogFrameItemsButton, false)
         TransmogFrameItemsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Items')
 
         if TransmogFrameSetsButton then
-            TransmogFrameSetsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
-            TransmogFrameSetsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+            Transmog:SetTabLook(TransmogFrameSetsButton, true)
             TransmogFrameSetsButtonText:SetText(HIGHLIGHT_FONT_COLOR_CODE .. 'Sets')
         end
 
@@ -505,13 +493,11 @@ function Transmog_switchTab(to)
             return
         end
 
-        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
-        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        Transmog:SetTabLook(TransmogFrameItemsButton, false)
         TransmogFrameItemsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Items')
 
         if TransmogFrameSetsButton then
-            TransmogFrameSetsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
-            TransmogFrameSetsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+            Transmog:SetTabLook(TransmogFrameSetsButton, false)
             TransmogFrameSetsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Sets')
         end
         Transmog:SetIllusionsTabActive(true)
@@ -530,13 +516,11 @@ function Transmog_switchTab(to)
             return
         end
 
-        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
-        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        Transmog:SetTabLook(TransmogFrameItemsButton, false)
         TransmogFrameItemsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Items')
 
         if TransmogFrameSetsButton then
-            TransmogFrameSetsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
-            TransmogFrameSetsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+            Transmog:SetTabLook(TransmogFrameSetsButton, false)
             TransmogFrameSetsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Sets')
         end
         Transmog:SetBackpacksTabActive(true)
@@ -555,13 +539,11 @@ function Transmog_switchTab(to)
             return
         end
 
-        TransmogFrameItemsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
-        TransmogFrameItemsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+        Transmog:SetTabLook(TransmogFrameItemsButton, false)
         TransmogFrameItemsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Items')
 
         if TransmogFrameSetsButton then
-            TransmogFrameSetsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\tab_inactive')
-            TransmogFrameSetsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+            Transmog:SetTabLook(TransmogFrameSetsButton, false)
             TransmogFrameSetsButtonText:SetText(NORMAL_FONT_COLOR_CODE .. 'Sets')
         end
         Transmog:SetFormsTabActive(true)

@@ -376,6 +376,7 @@ function Transmog:addWonItem(itemID)
 
         if not self.newTransmogAlert.wonItems[newTransmogIndex] then
             self.newTransmogAlert.wonItems[newTransmogIndex] = CreateFrame("Frame", "NewTransmogAlertFrame" .. newTransmogIndex, NewTransmogAlertFrame, "TransmogWonItemTemplate")
+            self:StyleToast(self.newTransmogAlert.wonItems[newTransmogIndex])
         end
 
         self.newTransmogAlert.wonItems[newTransmogIndex]:SetPoint("TOP", NewTransmogAlertFrame, "BOTTOM", 0, (20 + 100 * newTransmogIndex))
@@ -457,7 +458,8 @@ Transmog.newTransmogAlert:SetScript("OnUpdate", function()
                             bgFile = 'Interface\\AddOns\\Transmog\\assets\\anim\\' .. image,
                             tile = false
                         };
-                        if Transmog.newTransmogAlert.wonItems[i].frameIndex <= 30 then
+                        -- The stock toast keeps its still plate (ui/stock_skin.lua).
+                        if Transmog.newTransmogAlert.wonItems[i].frameIndex <= 30 and not Transmog.stockLook then
                             frame:SetBackdrop(backdrop)
                         end
                         frame:SetAlpha(frame:GetAlpha() + 0.03)

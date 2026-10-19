@@ -252,9 +252,9 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
 
             local staged = self.transmogStatusToServer[slot] or 0
             if item.id == staged or (item.reset and staged == 0) then
-                getglobal('TransmogLook' .. itemIndex .. 'Button'):SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_selected')
+                Transmog:SetTileLook(getglobal('TransmogLook' .. itemIndex .. 'Button'), true)
             else
-                getglobal('TransmogLook' .. itemIndex .. 'Button'):SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_normal')
+                Transmog:SetTileLook(getglobal('TransmogLook' .. itemIndex .. 'Button'), false)
             end
 
             self:SetLookTooltip(getglobal('TransmogLook' .. itemIndex .. 'Button'), item)

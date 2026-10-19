@@ -1,7 +1,7 @@
 -- DragonUI reskin. With DragonUI loaded (and new enough to carry the helpers borrowed here) the
 -- transmog window trades its baked retail art for DragonUI's: the metal portrait frame on rock,
 -- marble insets, red buttons, DragonUI's close button, checkbox and scroll bar. Without DragonUI
--- nothing here runs and the window keeps its own art.
+-- nothing here runs and ui/stock_skin.lua gives the window the stock 3.3.5 look instead.
 -- Loaded after transmog.xml: it needs TransmogFrame.
 
 local Transmog = _G.Transmog
@@ -27,7 +27,7 @@ local function tiled(host, sublevel, file)
 end
 
 -- A recessed pane on marble (retail's InsetFrameTemplate). Returns false without DragonUI, so
--- the caller keeps its own backdrop.
+-- the caller falls back to the stock box (Transmog.StockInset in ui/stock_skin.lua).
 function Transmog.SkinInset(pane)
     local D = Transmog.Dragon()
     if not D then return false end
