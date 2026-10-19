@@ -211,8 +211,7 @@ function Transmog:PreviewMissing(itemId)
     self:RefreshPreviewModel()
     TransmogFramePlayerModel:TryOn(itemId)
     for itemIndex, data in ipairs(self.ItemButtons) do
-        local texture = data.id == itemId and 'item_bg_selected' or 'item_bg_normal'
-        getglobal('TransmogLook' .. itemIndex .. 'Button'):SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\' .. texture)
+        self:SetTileLook(getglobal('TransmogLook' .. itemIndex .. 'Button'), data.id == itemId)
     end
 end
 

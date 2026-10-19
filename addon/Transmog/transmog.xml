@@ -155,7 +155,7 @@
                 <PushedTexture inherits=""/>
                 <DisabledTexture inherits=""/>
                 <HighlightTexture inherits=""/>
-                <Backdrop bgFile="Interface\Tooltips\U1I-Tooltip-Background" tile="true">
+                <Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background" tile="true">
                 </Backdrop>
                 <Size>
                     <AbsDimension x="46" y="46"/>

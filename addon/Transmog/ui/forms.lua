@@ -97,9 +97,7 @@ function Transmog:SetFormsTabActive(active)
     if not TransmogFrameFormsButton then
         return
     end
-    local texture = active and 'tab_active' or 'tab_inactive'
-    TransmogFrameFormsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\' .. texture)
-    TransmogFrameFormsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+    self:SetTabLook(TransmogFrameFormsButton, active)
     TransmogFrameFormsButtonText:SetText((active and HIGHLIGHT_FONT_COLOR_CODE or NORMAL_FONT_COLOR_CODE) .. TAB_NAME)
 end
 
@@ -309,9 +307,9 @@ function Transmog:RenderForms()
             getglobal('TransmogLook' .. itemIndex .. 'ButtonRevert'):Hide()
             getglobal('TransmogLook' .. itemIndex .. 'ButtonCheck'):Hide()
             if entry.id == chosen then
-                button:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_selected')
+                Transmog:SetTileLook(button, true)
             else
-                button:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_normal')
+                Transmog:SetTileLook(button, false)
             end
 
             local hint

@@ -416,16 +416,10 @@ function Transmog:InitSetsView()
     listContainer:SetWidth(200)
     listContainer:SetHeight(348)
     listContainer:SetFrameLevel(frame:GetFrameLevel() + 1)
-    -- DragonUI's marble inset when DragonUI is loaded (ui/dragonui_skin.lua).
+    -- DragonUI's marble inset when DragonUI is loaded (ui/dragonui_skin.lua), else a stock
+    -- options box (ui/stock_skin.lua).
     if not Transmog.SkinInset(listContainer) then
-        listContainer:SetBackdrop({
-            bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            tile = true, tileSize = 16, edgeSize = 12,
-            insets = { left = 3, right = 3, top = 3, bottom = 3 }
-        })
-        listContainer:SetBackdropColor(0.05, 0.05, 0.08, 0.85)
-        listContainer:SetBackdropBorderColor(0.4, 0.4, 0.5, 0.9)
+        Transmog.StockInset(listContainer)
     end
     listContainer:EnableMouseWheel(true)
     listContainer:SetScript("OnMouseWheel", function(self, delta)
@@ -469,12 +463,15 @@ function Transmog:InitSetsView()
             end
         end)
 
-        -- Row Background texture (using standard WHITE8X8 solid color texture)
-        local bg = btn:CreateTexture(nil, "BACKGROUND")
-        bg:SetTexture("Interface\\Buttons\\WHITE8X8")
-        bg:SetVertexColor(0.08, 0.10, 0.15, 0.5)
-        bg:SetAllPoints(btn)
-        btn.bg = bg
+        -- Row Background texture (using standard WHITE8X8 solid color texture). The stock box
+        -- has none: its rows sit straight on it, as stock lists do.
+        if not Transmog.stockLook then
+            local bg = btn:CreateTexture(nil, "BACKGROUND")
+            bg:SetTexture("Interface\\Buttons\\WHITE8X8")
+            bg:SetVertexColor(0.08, 0.10, 0.15, 0.5)
+            bg:SetAllPoints(btn)
+            btn.bg = bg
+        end
 
         -- Highlight texture on hover
         local hl = btn:CreateTexture(nil, "HIGHLIGHT")
@@ -540,16 +537,10 @@ function Transmog:InitSetsView()
     detail:SetWidth(250)
     detail:SetHeight(348)
     detail:SetFrameLevel(frame:GetFrameLevel() + 1)
-    -- DragonUI's marble inset when DragonUI is loaded (ui/dragonui_skin.lua).
+    -- DragonUI's marble inset when DragonUI is loaded (ui/dragonui_skin.lua), else a stock
+    -- options box (ui/stock_skin.lua).
     if not Transmog.SkinInset(detail) then
-        detail:SetBackdrop({
-            bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            tile = true, tileSize = 16, edgeSize = 12,
-            insets = { left = 3, right = 3, top = 3, bottom = 3 }
-        })
-        detail:SetBackdropColor(0.05, 0.05, 0.08, 0.85)
-        detail:SetBackdropBorderColor(0.4, 0.4, 0.5, 0.9)
+        Transmog.StockInset(detail)
     end
     self.detailFrame = detail
     _G["TransmogSetDetailFrame"] = detail
@@ -588,6 +579,10 @@ function Transmog:InitSetsView()
     sep:SetHeight(1)
     sep:SetTexture("Interface\\Buttons\\WHITE8X8")
     sep:SetVertexColor(0.35, 0.35, 0.45, 0.8)
+    -- Stock panes have no drawn rule; the gap above the pieces does it.
+    if self.stockLook then
+        sep:Hide()
+    end
     self.detailSep = sep
 
     -- Pieces container & buttons

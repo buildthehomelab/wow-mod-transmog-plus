@@ -65,9 +65,7 @@ function Transmog:SetIllusionsTabActive(active)
     if not TransmogFrameIllusionsButton then
         return
     end
-    local texture = active and 'tab_active' or 'tab_inactive'
-    TransmogFrameIllusionsButton:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\' .. texture)
-    TransmogFrameIllusionsButton:SetPushedTexture('Interface\\AddOns\\Transmog\\assets\\tab_active')
+    self:SetTabLook(TransmogFrameIllusionsButton, active)
     TransmogFrameIllusionsButtonText:SetText((active and HIGHLIGHT_FONT_COLOR_CODE or NORMAL_FONT_COLOR_CODE) .. 'Illusions')
 end
 
@@ -157,9 +155,9 @@ function Transmog:RenderIllusions()
             getglobal('TransmogLook' .. itemIndex .. 'ButtonRevert'):Hide()
             getglobal('TransmogLook' .. itemIndex .. 'ButtonCheck'):Hide()
             if entry.id == (self.illusionStatusToServer[slot] or 0) then
-                button:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_selected')
+                Transmog:SetTileLook(button, true)
             else
-                button:SetNormalTexture('Interface\\AddOns\\Transmog\\assets\\item_bg_normal')
+                Transmog:SetTileLook(button, false)
             end
             AddButtonOnEnterTextTooltip(button, "|cffff80ff" .. entry.name, entry.hint)
 
