@@ -55,7 +55,7 @@ it collects appearances the retail way (see below) and ships a migration from mo
   |---|---|---|
   | [wow-mod-retail-druid-forms](https://github.com/buildthehomelab/wow-mod-retail-druid-forms) | 265 retail druid form looks | patch-R |
   | [wow-mod-retail-shaman-totems](https://github.com/buildthehomelab/wow-mod-retail-shaman-totems) | 80 totem looks: the client's five race sets and 15 retail sets | patch-V |
-  | [wow-mod-retail-warlock-pets](https://github.com/buildthehomelab/wow-mod-retail-warlock-pets) | 27 demon looks, all displays the Reforged client already has | none yet |
+  | [wow-mod-retail-warlock-pets](https://github.com/buildthehomelab/wow-mod-retail-warlock-pets) | 74 demon looks, most on the Reforged client's own models | patch-Y |
 
   A pack fills the world table `mod_transmog_plus_forms`. A class with no looks in it gets no
   tab, so a realm without packs is plain transmog, with nothing else to switch off. The packs
@@ -95,7 +95,7 @@ it collects appearances the retail way (see below) and ships a migration from mo
   otherwise draws the transmog appearance's icon, and an empty slot for a hidden one.
 
 
-## Optional Addon (WIP)
+## Addon
 
 This module includes a WoW 3.3.5a client addon in the `addon/` directory. It provides a
 visual transmog interface with 3D item preview. If the addon is not installed, the standard
