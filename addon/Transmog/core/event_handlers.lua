@@ -53,31 +53,6 @@ Transmog:SetScript("OnEvent", function()
         end
         if event == 'CHAT_MSG_ADDON' then
 
-            if arg1 == "TW_CHAT_MSG_WHISPER" then
-                local message = arg2
-                local from = arg4
-                if string.find(message, 'INSShowTransmogs', 1, true) then
-                    SendAddonMessage("TW_CHAT_MSG_WHISPER<" .. from .. ">", "INSTransmogs:start", "GUILD")
-                    for InventorySlotId, itemID in pairs(Transmog.transmogStatusFromServer) do
-                        if itemID ~= 0 then
-
-                            local TransmogItemName = GetItemInfo(itemID)
-
-                            if TransmogItemName then
-                                -- check if we actually have an item equipped
-                                if GetInventoryItemLink('player', InventorySlotId) then
-                                    local _, _, eqItemLink = TransmogFrame_Find(GetInventoryItemLink('player', InventorySlotId), "(item:%d+:%d+:%d+:%d+)");
-                                    local eName = GetItemInfo(eqItemLink)
-                                    SendAddonMessage("TW_CHAT_MSG_WHISPER<" .. from .. ">", "INSTransmogs:" .. eName .. ":" .. TransmogItemName, "GUILD")
-                                end
-                            end
-                        end
-                    end
-                    SendAddonMessage("TW_CHAT_MSG_WHISPER<" .. from .. ">", "INSTransmogs:end", "GUILD")
-                end
-                return
-            end
-
 			if TransmogFrame_Find(arg1, Transmog.prefix, 1, true) then
 
 				twfdebug("CHAT_MSG_ADDON " .. arg2)
