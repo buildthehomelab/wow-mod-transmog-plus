@@ -53,7 +53,7 @@ Transmog:SetScript("OnEvent", function()
         end
         if event == 'CHAT_MSG_ADDON' then
 
-			if TransmogFrame_Find(arg1, Transmog.prefix, 1, true) then
+			if Transmog:IsServerMessage(arg1, arg3, arg4) then
 
 				twfdebug("CHAT_MSG_ADDON " .. arg2)
 				local message = arg2

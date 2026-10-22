@@ -165,9 +165,9 @@ if RegisterAddonMessagePrefix then
     RegisterAddonMessagePrefix(PREFIX)
 end
 
-frame:SetScript("OnEvent", function(_, event, arg1, arg2)
+frame:SetScript("OnEvent", function(_, event, arg1, arg2, arg3, arg4)
     if event == "CHAT_MSG_ADDON" then
-        if arg1 ~= PREFIX then
+        if not Transmog:IsServerMessage(arg1, arg3, arg4) then
             return
         end
 

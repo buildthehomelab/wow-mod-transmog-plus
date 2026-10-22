@@ -11,6 +11,12 @@ function Transmog:IDFromLink(link)
     return nil
 end
 
+-- True only for server replies: the server whispers them from the player to themselves.
+-- Other players can send this prefix on GUILD/PARTY/RAID or whisper it from their own name.
+function Transmog:IsServerMessage(prefix, channel, sender)
+    return prefix == self.prefix and channel == "WHISPER" and sender == UnitName("player")
+end
+
 -- Returns the number of entries in a table.
 function Transmog:tableSize(t)
     if type(t) ~= 'table' then
