@@ -1,6 +1,6 @@
 ## Interface: 30300
 ## Title: Transmog
-## Version: 1.14.1
+## Version: 1.14.2
 ## Notes: Transmog UI, ported from CMaNGOS to AzerothCore mod-transmog-plus. With the Journal addon it is also the Journal's Appearances tab.
 ## OptionalDeps: Journal, DragonUI
 ## SavedVariables: transmogSetBonusTiers
