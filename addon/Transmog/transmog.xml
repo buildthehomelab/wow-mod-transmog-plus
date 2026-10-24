@@ -1060,6 +1060,50 @@
                             </OnEscapePressed>
                         </Scripts>
                     </EditBox>
+                    <!-- Above the grid, left of the Collected bar; ui/item_filters.lua fills the menus. -->
+                    <Button name="$parentType" inherits="UIPanelButtonTemplate" text="All Types">
+                        <Size>
+                            <AbsDimension x="140" y="20"/>
+                        </Size>
+                        <Anchors>
+                            <Anchor point="TOPLEFT" relativeTo="TransmogFrame" relativePoint="TOPLEFT">
+                                <Offset>
+                                    <AbsDimension x="266" y="-81"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnClick>
+                                TransmogFilters_OnTypeClick(this)
+                            </OnClick>
+                            <OnEnter>
+                                GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+                                GameTooltip:SetText("Item type")
+                                GameTooltip:AddLine("Show only one armor or weapon type.", 1, 1, 1, true)
+                                GameTooltip:Show()
+                            </OnEnter>
+                            <OnLeave>
+                                GameTooltip:Hide()
+                            </OnLeave>
+                        </Scripts>
+                    </Button>
+                    <Button name="$parentSort" inherits="UIPanelButtonTemplate" text="Sort: Default">
+                        <Size>
+                            <AbsDimension x="140" y="20"/>
+                        </Size>
+                        <Anchors>
+                            <Anchor point="TOPLEFT" relativeTo="TransmogFrame" relativePoint="TOPLEFT">
+                                <Offset>
+                                    <AbsDimension x="412" y="-81"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnClick>
+                                TransmogFilters_OnSortClick(this)
+                            </OnClick>
+                        </Scripts>
+                    </Button>
                     <CheckButton name="$parentMissing" inherits="UICheckButtonTemplate">
                         <Size>
                             <AbsDimension x="24" y="24"/>
