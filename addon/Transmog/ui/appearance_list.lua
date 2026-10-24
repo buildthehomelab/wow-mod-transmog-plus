@@ -206,6 +206,7 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
     self:hideItems(true)
     self:hideItemBorders()
     TransmogFrameFilters:Show()
+    self:UpdateFilterButtons()
     TransmogFrameNoTransmogs:Hide()
 
 	local looks = self.appearanceGroups[slot] and self.appearanceGroups[slot][itemClass]
@@ -511,6 +512,10 @@ function Transmog:ShowLookTooltip(owner, item)
     FashionTooltip:AddLine(color .. item.name)
 
     if item.id ~= self.HIDDEN_ITEM_ID then
+        local typeText = self:LookTypeText(item)
+        if typeText then
+            FashionTooltip:AddLine(typeText, 1, 1, 1)
+        end
         FashionTooltip:AddLine("Sources:", 1, 0.82, 0)
         local sources = self.sourcesByItem[item.id]
         -- An empty answer (item unknown to the server's look index) keeps the collected list.

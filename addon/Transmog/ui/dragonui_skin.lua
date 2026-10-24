@@ -125,6 +125,8 @@ end
 
 D.SkinRedButton(TransmogFrameApplyButton)
 D.SkinRedButton(TransmogFrameSaveOutfit)
+D.SkinRedButton(TransmogFrameFiltersType)
+D.SkinRedButton(TransmogFrameFiltersSort)
 
 if CP.SkinCheckbox then CP.SkinCheckbox(TransmogFrameFiltersMissing) end
 

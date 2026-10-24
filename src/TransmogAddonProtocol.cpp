@@ -336,9 +336,10 @@ namespace TransmogAddon
 
     // Looks the account hasn't collected that the item in this slot could take, one item each:
     // "MissingLooks:<seq>:<total>:start", "MissingLooks:<seq>:<total>:<id>:<id>...", "...:end".
-    // Args are "<seq>:<slot>[:<query>]"; seq is echoed so the addon can drop stale answers.
-    // A query keeps looks with any usable source whose name contains it. Total counts every
-    // match, even past MAX_MISSING.
+    // Args are "<seq>:<slot>[:<query>[:<class>:<subclass>[:<sort>]]]"; seq is echoed so the addon
+    // can drop stale answers. A query keeps looks with any usable source whose name contains it;
+    // a class and subclass keep only sources of that item type. Sort is 0 quality, 1 name,
+    // 2 item level. Total counts every match, even past MAX_MISSING.
     void HandleGetMissing(Player* player, std::string const& args)
     {
         std::vector<std::string_view> parts = Acore::Tokenize(args, ':', true);
@@ -347,6 +348,13 @@ namespace TransmogAddon
             return;
 
         std::string query = parts.size() > 2 ? LowerAscii(parts[2].substr(0, MAX_QUERY)) : std::string();
+
+        // An empty or missing type field means any type.
+        uint32 typeClass = 0, typeSubclass = 0;
+        bool byType = parts.size() > 4 && ParseUint32(parts[3], typeClass) && ParseUint32(parts[4], typeSubclass);
+        uint32 sortMode = 0;
+        if (parts.size() > 5)
+            ParseUint32(parts[5], sortMode);
 
         Item* targetItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
         ItemTemplate const* targetTemplate = targetItem ? targetItem->GetTemplate() : nullptr;
@@ -372,6 +380,8 @@ namespace TransmogAddon
                     ItemTemplate const* proto = sObjectMgr->GetItemTemplate(id);
                     if (!proto || !TransmogRules_CanTransmogrifyItemWithItem(player, targetTemplate, proto))
                         continue;
+                    if (byType && (proto->Class != typeClass || proto->SubClass != typeSubclass))
+                        continue;
 
                     if (!lead || proto->Quality > lead->Quality)
                         lead = proto;
@@ -385,9 +395,11 @@ namespace TransmogAddon
             }
         }
 
-        std::sort(missing.begin(), missing.end(), [](ItemTemplate const* a, ItemTemplate const* b)
+        std::sort(missing.begin(), missing.end(), [sortMode](ItemTemplate const* a, ItemTemplate const* b)
         {
-            if (a->Quality != b->Quality)
+            if (sortMode == 2 && a->ItemLevel != b->ItemLevel)
+                return a->ItemLevel > b->ItemLevel;
+            if (sortMode != 1 && a->Quality != b->Quality)
                 return a->Quality > b->Quality;
             return a->Name1 < b->Name1;
         });

@@ -25,6 +25,11 @@ it collects appearances the retail way (see below) and ships a migration from mo
   **Missing** to list the looks the selected item could use that your account hasn't collected
   yet. The server builds that list and runs the search on it. Click a missing look to try it
   on; Shift-click any look to link the item in chat.
+- **Type** and **Sort** above the Items grid. Type shows one armor type (Cloth, Leather, Mail,
+  Plate, Cosmetic) or one weapon type (Daggers, Polearms, Shields, ...), with how many of each
+  you have; the pick carries across slots of the same kind (armor or weapons) until logout.
+  Sort orders by name, quality or item level; your equipped look and Hidden stay first. With
+  Missing ticked the server applies both (`GetMissing` type and sort fields).
 - Illusions: weapon enchant glows unlock for the account when you enchant a weapon (or own an
   enchanted one) and can be shown on the main hand or off hand from the Illusions tab, or
   hidden altogether (`Transmog.Illusions.Enable`).

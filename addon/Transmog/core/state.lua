@@ -31,6 +31,10 @@ Transmog.searchText = ""
 Transmog.showMissing = false
 Transmog.missingLooks = nil
 Transmog.missingSeq = 0
+-- Type and sort picks; they last until logout, closing the window keeps them. typeFilters is
+-- keyed by slot group (ui/item_filters.lua).
+Transmog.typeFilters = {}
+Transmog.lookSort = "default"
 
 -- Set once the server answers the newer requests, so an older server module never leaves the
 -- addon waiting (sources, outfits) or stuck with an Apply it will never confirm (illusions).
