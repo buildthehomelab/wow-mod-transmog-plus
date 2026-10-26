@@ -44,7 +44,9 @@ it collects appearances the retail way (see below) and ships a migration from mo
   the Forms tab, like retail's barber shop. The classic looks are there from the start; each
   individual progression phase cleared unlocks the next batch. A look goes on whenever the
   form's normal model would, so transforms (costumes, Polymorph) still win
-  (`Transmog.Forms.Enable`).
+  (`Transmog.Forms.Enable`). A look can be in both the Travel and Aquatic Form lists (an
+  otter): picked for both, the two forms swap for free on entering and leaving water, like
+  retail's Travel Form (`Transmog.Forms.WaterSwap`).
 - Shaman totems (optional, with a look pack): shamans pick a look for each totem element (fire,
   earth, water, air) from the Totems tab, which takes the Forms tab's place for them. The look
   goes on when the totem is summoned, and everyone sees it (`Transmog.Totems.Enable`).

@@ -297,6 +297,18 @@ Transmog.Backpacks.Mail.Subject = "Something for your back"
 
 Transmog.Forms.Enable = 1
 
+#
+#    Transmog.Forms.WaterSwap
+#        Description: A druid with the same look picked for Travel Form and Aquatic Form (a look
+#                     that's in both lists, like an otter) changes between the two on entering and
+#                     leaving water, like retail's Travel Form: no mana, no global cooldown. Two
+#                     different looks leave both forms as they are.
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled)
+#
+
+Transmog.Forms.WaterSwap = 1
+
 ###################################################################################################
 #    SHAMAN TOTEMS
 #

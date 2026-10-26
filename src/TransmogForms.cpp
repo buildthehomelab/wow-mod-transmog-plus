@@ -6,14 +6,18 @@
 #include "SpellAuraEffects.h"
 #include "SpellMgr.h"
 #include "TemporarySummon.h"
+#include "Timer.h"
 #include <array>
 #include <memory>
+#include <unordered_set>
 
 // Druid form looks: retail form models (from the realm's client patch) shown in place of the
 // stock bear, cat, travel, aquatic, flight, moonkin and tree models. The druid picks one look per
 // form in the Forms tab; looks unlock with individual progression phases, and the stock look is
 // always there. A look can also wait for a spell (mod_transmog_plus_form_spells): a mount module
 // lists its mount's spell there, so a druid who knows the mount has its flight form. The look goes on whenever the core sets the form's stock model.
+// A look can be in both the Travel and the Aquatic list (an otter): picked for both, the two forms
+// work as one, like retail's Travel Form, and swap for free on entering and leaving water.
 //
 // Shaman totem looks work the same way, with the four totem elements in place of the forms: the
 // shaman picks one look per element in the Totems tab, and it goes on the totem when the core
@@ -27,6 +31,7 @@ namespace
     struct FormPlayerState
     {
         std::array<uint32, Transmog::FORM_KIND_COUNT> chosen{};
+        uint32 lastWaterSwap = 0; // getMSTime() of the last Travel/Aquatic swap tried
     };
 
     std::unordered_map<ObjectGuid, std::unique_ptr<FormPlayerState>> formStates;
@@ -56,6 +61,12 @@ namespace
 
     // Individual progression phases are quests base+1 .. base+MAX_PHASE.
     constexpr uint8 MAX_PHASE = 18;
+
+    constexpr uint32 SPELL_TRAVEL_FORM = 783;
+    constexpr uint32 SPELL_AQUATIC_FORM = 1066;
+    // A swap that can't happen (Travel Form underwater in a cave is indoors) waits this long
+    // before it's tried again, not every movement packet.
+    constexpr uint32 WATER_SWAP_RETRY_MS = 1000;
 
     // Bots never pick a look, so they skip the queries and the hook.
     bool Tracked(Player* player)
@@ -194,10 +205,10 @@ void Transmog::LoadForms()
         forms.size(), hasDruidLooks ? "yes" : "no pack", hasTotemLooks ? "yes" : "no pack", hasDemonLooks ? "yes" : "no pack");
 }
 
-Transmog::FormEntry const* Transmog::GetForm(uint32 displayId) const
+Transmog::FormEntry const* Transmog::GetForm(uint32 displayId, FormKind kind) const
 {
     for (FormEntry const& entry : forms)
-        if (entry.displayId == displayId)
+        if (entry.displayId == displayId && entry.kind == kind)
             return &entry;
     return nullptr;
 }
@@ -211,10 +222,9 @@ void Transmog::LoadPlayerForms(ObjectGuid guid)
         {
             Field* fields = result->Fetch();
             uint8 kind = fields[0].Get<uint8>();
-            FormEntry const* entry = GetForm(fields[1].Get<uint32>());
             // A look removed from the table, or moved to another form, falls back to the default.
-            if (kind < FORM_KIND_COUNT && entry && entry->kind == kind)
-                state->chosen[kind] = entry->displayId;
+            if (kind < FORM_KIND_COUNT && GetForm(fields[1].Get<uint32>(), FormKind(kind)))
+                state->chosen[kind] = fields[1].Get<uint32>();
         } while (result->NextRow());
     }
 
@@ -251,8 +261,8 @@ TransmogApplyResult Transmog::ApplyForm(Player* player, FormKind kind, uint32 di
 
     if (displayId)
     {
-        FormEntry const* entry = GetForm(displayId);
-        if (!entry || entry->kind != kind || !IsFormUnlocked(player, *entry))
+        FormEntry const* entry = GetForm(displayId, kind);
+        if (!entry || !IsFormUnlocked(player, *entry))
             return TransmogApplyResult::InvalidAppearance;
     }
 
@@ -314,7 +324,7 @@ void Transmog::ApplyFormLook(Player* player, uint32 displayId)
         return;
 
     // A look whose phase the character no longer has (an individual progression reset) stays off.
-    FormEntry const* entry = GetForm(look);
+    FormEntry const* entry = GetForm(look, kind);
     if (!entry || !IsFormUnlocked(player, *entry))
         return;
 
@@ -326,6 +336,50 @@ void Transmog::ApplyFormLook(Player* player, uint32 displayId)
 
     // Not SetDisplayId: that would come back through this hook.
     player->SetUInt32Value(UNIT_FIELD_DISPLAYID, look);
+}
+
+// Travel and Aquatic Form wearing the same look work as one form: into the water, Travel Form
+// turns into Aquatic Form, and back on land Aquatic Form turns into Travel Form, with no mana and
+// no global cooldown. Runs after every movement packet, once the core has updated whether the
+// druid is in the water. Two different looks (or none) leave both forms as they are.
+void Transmog::SwapTravelAquatic(Player* player, MovementInfo const& movementInfo)
+{
+    uint32 spellId;
+    if (player->GetShapeshiftForm() == FORM_TRAVEL && player->IsInWater())
+        spellId = SPELL_AQUATIC_FORM;
+    // Not in mid-air: a leap out of the water lands back in it.
+    else if (player->GetShapeshiftForm() == FORM_AQUA && !player->IsInWater()
+        && !movementInfo.HasMovementFlag(MOVEMENTFLAG_FALLING | MOVEMENTFLAG_FALLING_FAR))
+        spellId = SPELL_TRAVEL_FORM;
+    else
+        return;
+
+    if (!player->IsAlive() || player->IsInFlight() || player->GetVehicle() || !player->HasSpell(spellId))
+        return;
+
+    uint32 look;
+    {
+        std::unique_lock<std::shared_mutex> lock(formStatesMutex);
+        auto it = formStates.find(player->GetGUID());
+        if (it == formStates.end())
+            return;
+        FormPlayerState& state = *it->second;
+        look = state.chosen[FORM_KIND_TRAVEL];
+        if (!look || look != state.chosen[FORM_KIND_AQUATIC])
+            return;
+        uint32 now = getMSTime();
+        if (state.lastWaterSwap && getMSTimeDiff(state.lastWaterSwap, now) < WATER_SWAP_RETRY_MS)
+            return;
+        state.lastWaterSwap = now;
+    }
+
+    // A look whose phase the character no longer has (an individual progression reset) doesn't swap.
+    FormEntry const* travel = GetForm(look, FORM_KIND_TRAVEL);
+    FormEntry const* aquatic = GetForm(look, FORM_KIND_AQUATIC);
+    if (!travel || !aquatic || !IsFormUnlocked(player, *travel) || !IsFormUnlocked(player, *aquatic))
+        return;
+
+    player->CastSpell(player, spellId, TRIGGERED_FULL_MASK);
 }
 
 // Runs from every SetDisplayId of a totem. The core gives a shaman's totem its race's model when
@@ -349,7 +403,7 @@ void Transmog::ApplyTotemLook(Unit* totem, uint32 displayId)
         return;
 
     // A look whose phase the character no longer has (an individual progression reset) stays off.
-    FormEntry const* entry = GetForm(look);
+    FormEntry const* entry = GetForm(look, kind);
     if (!entry || !IsFormUnlocked(owner, *entry))
         return;
 
@@ -373,17 +427,13 @@ void Transmog::ApplyDemonLook(Creature* demon)
 
     uint32 stock = demon->GetNativeDisplayId();
     uint32 worn = demon->GetDisplayId();
-    if (worn != stock)
-    {
-        FormEntry const* entry = GetForm(worn);
-        if (!entry || entry->kind != kind)
-            return;
-    }
+    if (worn != stock && !GetForm(worn, kind))
+        return;
 
     // No look, or one whose phase the character no longer has (an individual progression reset):
     // the demon's own model.
     uint32 look = GetChosenForm(owner->GetGUID(), kind);
-    FormEntry const* entry = look ? GetForm(look) : nullptr;
+    FormEntry const* entry = look ? GetForm(look, kind) : nullptr;
     if (!entry || !IsFormUnlocked(owner, *entry))
         look = stock;
 
@@ -422,15 +472,17 @@ void Transmog::AnnounceFormUnlocks(Player* player, uint8 phase)
 // After learning a spell: each look of the player's class it unlocks, in chat and to the addon.
 void Transmog::AnnounceSpellFormUnlocks(Player* player, uint32 spellId)
 {
-    bool any = false;
+    std::unordered_set<uint32> announced;
     for (FormEntry const& entry : forms)
     {
         if (entry.unlockSpell != spellId || FormKindClass(entry.kind) != player->getClass() || !IsFormUnlocked(player, entry))
             continue;
+        // A look in two forms' lists (Travel and Aquatic) is one look.
+        if (!announced.insert(entry.displayId).second)
+            continue;
         ChatHandler(player->GetSession()).PSendSysMessage("|cffff80ff[{}]|r {}", entry.name, Tstr(player->GetSession(), LANG_TRANSMOG_FORM_LOOK_UNLOCKED));
-        any = true;
     }
-    if (any)
+    if (!announced.empty())
         TransmogAddon::SendFormsUnlocked(player, GetProgressionPhase(player));
 }
 
@@ -533,8 +585,23 @@ public:
     }
 };
 
+class TransmogFormMovementScript : public MovementHandlerScript
+{
+public:
+    TransmogFormMovementScript() : MovementHandlerScript("TransmogFormMovementScript", {
+        MOVEMENTHOOK_ON_PLAYER_MOVE
+    }) { }
+
+    void OnPlayerMove(Player* player, MovementInfo movementInfo, uint32 /*opcode*/) override
+    {
+        if (player && sTransmog->FormsWaterSwap && player->getClass() == CLASS_DRUID && Tracked(player))
+            sTransmog->SwapTravelAquatic(player, movementInfo);
+    }
+};
+
 void AddSC_TransmogForms()
 {
     new TransmogFormPlayerScript();
     new TransmogFormUnitScript();
+    new TransmogFormMovementScript();
 }
