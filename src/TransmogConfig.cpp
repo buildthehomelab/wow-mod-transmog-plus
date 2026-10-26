@@ -77,6 +77,7 @@ void Transmog::LoadConfig()
     FormsEnable = sConfigMgr->GetOption<bool>("Transmog.Forms.Enable", true);
     TotemsEnable = sConfigMgr->GetOption<bool>("Transmog.Totems.Enable", true);
     DemonsEnable = sConfigMgr->GetOption<bool>("Transmog.Demons.Enable", true);
+    FormsWaterSwap = sConfigMgr->GetOption<bool>("Transmog.Forms.WaterSwap", true);
     BackpacksHideCloak = sConfigMgr->GetOption<bool>("Transmog.Backpacks.HideCloak", true);
     BackpackPhaseQuestBase = sConfigMgr->GetOption<uint32>("Transmog.Backpacks.PhaseQuestBase", 66000);
     BackpackMailEnable = sConfigMgr->GetOption<bool>("Transmog.Backpacks.Mail.Enable", true);

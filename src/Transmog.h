@@ -190,6 +190,9 @@ public:
     bool FormsEnable;
     bool TotemsEnable;
     bool DemonsEnable;
+    // A druid with the same look picked for Travel and Aquatic Form changes between the two for
+    // free on entering and leaving water (Transmog.Forms.WaterSwap).
+    bool FormsWaterSwap;
     bool hasDruidLooks = false;
     bool hasTotemLooks = false;
     bool hasDemonLooks = false;
@@ -230,7 +233,8 @@ public:
     // The player's class has looks to pick (its pack is installed), and they're switched on.
     bool HasFormLooks(Player const* player) const;
     void LoadForms();
-    FormEntry const* GetForm(uint32 displayId) const;
+    // A look can be in more than one form's list (an otter for Travel and Aquatic Form).
+    FormEntry const* GetForm(uint32 displayId, FormKind kind) const;
     void LoadPlayerForms(ObjectGuid guid);
     void UnloadPlayerForms(ObjectGuid guid);
     bool IsFormUnlocked(Player const* player, FormEntry const& entry) const;
@@ -238,6 +242,7 @@ public:
     // displayId 0 goes back to the default look.
     TransmogApplyResult ApplyForm(Player* player, FormKind kind, uint32 displayId);
     void ApplyFormLook(Player* player, uint32 displayId);
+    void SwapTravelAquatic(Player* player, MovementInfo const& movementInfo);
     void ApplyTotemLook(Unit* totem, uint32 displayId);
     void ApplyDemonLook(Creature* demon);
     void ApplyDemonLooks(Player* player);
