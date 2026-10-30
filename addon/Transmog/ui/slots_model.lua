@@ -146,7 +146,9 @@ function Transmog_Try(itemId, slotName, newReset)
         local _, _, eqItemLink = TransmogFrame_Find(GetInventoryItemLink('player', InventorySlotId), "(item:%d+:%d+:%d+:%d+)");
         local eName = GetItemInfo(eqItemLink)
 
-        Transmog.equippedTransmogs[eName] = nil
+        if eName then
+            Transmog.equippedTransmogs[eName] = nil
+        end
 
         Transmog:calculateCost()
         Transmog:EnableOutfitSaveButton()

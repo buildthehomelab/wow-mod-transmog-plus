@@ -13,7 +13,12 @@ function Transmog:transmogStatus()
 				if GetInventoryItemLink('player', InventorySlotId) then
 					local _, _, eqItemLink = TransmogFrame_Find(GetInventoryItemLink('player', InventorySlotId), "(item:%d+:%d+:%d+:%d+)");
 					local eName = GetItemInfo(eqItemLink)
-					self.equippedTransmogs[eName] = "(Hidden)"
+					-- The worn item can be missing from the client cache (nil name).
+					if eName then
+						self.equippedTransmogs[eName] = "(Hidden)"
+					else
+						self:cacheItem(eqItemLink)
+					end
 				end
 			else
 
@@ -23,7 +28,11 @@ function Transmog:transmogStatus()
 					if GetInventoryItemLink('player', InventorySlotId) then
 						local _, _, eqItemLink = TransmogFrame_Find(GetInventoryItemLink('player', InventorySlotId), "(item:%d+:%d+:%d+:%d+)");
 						local eName = GetItemInfo(eqItemLink)
-						self.equippedTransmogs[eName] = TransmogItemName
+						if eName then
+							self.equippedTransmogs[eName] = TransmogItemName
+						else
+							self:cacheItem(eqItemLink)
+						end
 					end
 				else
 					twfdebug("Slot: "..InventorySlotId.. " itemID: " .. itemID)
