@@ -1,5 +1,9 @@
 #include "Transmog.h"
 #include "ByteBuffer.h"
+#include "GameObjectData.h"
+#include "ObjectMgr.h"
+#include "Spell.h"
+#include "SpellInfo.h"
 #include "UpdateFields.h"
 
 class TransmogUnitScript : public UnitScript
@@ -31,6 +35,33 @@ public:
         return EQUIPMENT_SLOT_END;
     }
 
+// Fishing with no (unbroken) rod in the main hand: another module lets the player fish with a rod kept
+// elsewhere (mod-retail-professions' Fishing slot) and shows that rod in the hands for the cast.
+// The hands then show what the fields say. Without such a module the core never lets anyone fish
+// without a rod in the main hand, so this is never true.
+    static bool FishingWithoutRodInHand(Player const* player)
+    {
+        Spell const* spell = player->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+        if (!spell)
+            return false;
+        bool fishing = false;
+        for (SpellEffectInfo const& effect : spell->GetSpellInfo()->GetEffects())
+            if (effect.Effect == SPELL_EFFECT_TRANS_DOOR)
+                if (GameObjectTemplate const* bobber = sObjectMgr->GetGameObjectTemplate(effect.MiscValue))
+                    fishing = fishing || bobber->type == GAMEOBJECT_TYPE_FISHINGNODE;
+        if (!fishing)
+            return false;
+        Item const* mainHand = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+        ItemTemplate const* proto = mainHand ? mainHand->GetTemplate() : nullptr;
+        return !proto || proto->Class != ITEM_CLASS_WEAPON || proto->SubClass != ITEM_SUBCLASS_WEAPON_FISHING_POLE
+            || mainHand->IsBroken();
+    }
+
+    static bool IsHandSlot(uint8 slot)
+    {
+        return slot == EQUIPMENT_SLOT_MAINHAND || slot == EQUIPMENT_SLOT_OFFHAND;
+    }
+
 // Replace visible-item data in the outgoing update while preserving the packet shape.
     void OnPatchValuesUpdate(Unit const* unit, ByteBuffer& valuesUpdateBuf, BuildValuesCachePosPointers& posPointers, Player*) override
     {
@@ -41,6 +72,8 @@ public:
         if (!player)
             return;
 
+        bool rodInHands = FishingWithoutRodInHand(player);
+
         for (auto const& pair : posPointers.other)
         {
             if (!pair.second)
@@ -50,6 +83,8 @@ public:
 
             if (uint8 weaponSlot = IllusionSlotOfField(index); weaponSlot != EQUIPMENT_SLOT_END)
             {
+                if (rodInHands)
+                    continue;
                 Item const* weapon = player->GetItemByPos(INVENTORY_SLOT_BAG_0, weaponSlot);
                 uint32 perm = weapon ? weapon->GetEnchantmentId(PERM_ENCHANTMENT_SLOT) : 0;
                 uint32 temp = weapon ? weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) : 0;
@@ -67,7 +102,7 @@ public:
                 continue;
 
             uint8 slot = (index - PLAYER_VISIBLE_ITEM_1_ENTRYID) / 2;
-            if (slot >= EQUIPMENT_SLOT_END)
+            if (slot >= EQUIPMENT_SLOT_END || (rodInHands && IsHandSlot(slot)))
                 continue;
 
             Item const* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
