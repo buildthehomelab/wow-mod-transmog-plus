@@ -1,6 +1,6 @@
 -- DragonUI reskin. With DragonUI loaded (and new enough to carry the helpers borrowed here) the
--- transmog window trades its baked retail art for DragonUI's: the metal portrait frame on rock,
--- marble insets, red buttons, DragonUI's close button, checkbox and scroll bar. Without DragonUI
+-- transmog window trades its baked retail art for DragonUI's: the bronze frame every other window
+-- wears on rock, marble insets, red buttons, DragonUI's close button, checkbox and scroll bar. Without DragonUI
 -- nothing here runs and ui/stock_skin.lua gives the window the stock 3.3.5 look instead.
 -- Loaded after transmog.xml: it needs TransmogFrame.
 
@@ -49,9 +49,10 @@ if not (D and TransmogFrame) then return end
 
 local frame = TransmogFrame
 
--- Where the baked art leaves its holes (measured off ui1.blp): the model window and the
--- appearance pane to its right, which starts under the tabs here so they sit on its trim.
-local MODEL_LEFT, MODEL_TOP, MODEL_RIGHT, MODEL_BOTTOM = 20, -111, 241, -473
+-- The model window and the appearance pane to its right, both starting under the tab row so their
+-- tops line up and the tabs sit on the pane's trim. The sides and the bottom are where the baked
+-- art left its holes (measured off ui1.blp).
+local MODEL_LEFT, MODEL_TOP, MODEL_RIGHT, MODEL_BOTTOM = 20, -79, 241, -473
 local PANE_LEFT, PANE_TOP, PANE_RIGHT, PANE_BOTTOM = 246, -79, -24, 8
 -- The race picture is 442 square at (18, -70) and was cut down to the model window by the art.
 local RACE_X, RACE_Y, RACE_SIZE = 18, -70, 442
@@ -73,6 +74,21 @@ if hasStreaks then
 else
     streaks:Hide()
 end
+
+-- The Outfits row moves up into the tab row, which frees the model window to rise to the pane's
+-- top; the model, the slots and the buttons on it follow so they stay centred in the taller window.
+TransmogFrameOutfits:ClearAllPoints()
+TransmogFrameOutfits:SetPoint("TOPLEFT", frame, "TOPLEFT", 5, -46)
+TransmogFrameRevert:ClearAllPoints()
+TransmogFrameRevert:SetPoint("TOPLEFT", frame, "TOPLEFT", 208, -88)
+TransmogFramePlayerModel:ClearAllPoints()
+TransmogFramePlayerModel:SetPoint("TOPLEFT", frame, "TOPLEFT", 20, -95)
+HeadSlot:ClearAllPoints()
+HeadSlot:SetPoint("TOPLEFT", frame, "TOPLEFT", 30, -134)
+HandsSlot:ClearAllPoints()
+HandsSlot:SetPoint("TOPLEFT", frame, "TOPLEFT", 205, -134)
+MainHandSlot:ClearAllPoints()
+MainHandSlot:SetPoint("TOPLEFT", frame, "TOPLEFT", 80, -417)
 
 -- The race picture keeps to the model window on its own now.
 local race = TransmogFrameRaceBackground
@@ -104,14 +120,7 @@ local chrome = CreateFrame("Frame", nil, frame)
 chrome:SetAllPoints(frame)
 chrome:SetFrameLevel(frame:GetFrameLevel() + 30)
 chrome:EnableMouse(false)
-NineSlice.ApplyLayout(chrome, NineSlice.GetLayout("PortraitFrameTemplate"))
-
--- Under the frame's ring, where DragonUI's own windows put their portrait.
-TransmogFramePortrait:SetParent(chrome)
-TransmogFramePortrait:SetDrawLayer("ARTWORK")
-TransmogFramePortrait:ClearAllPoints()
-TransmogFramePortrait:SetSize(58, 58)
-TransmogFramePortrait:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 6)
+NineSlice.ApplyLayout(chrome, NineSlice.GetLayout("NoPortraitFrameTemplate") or NineSlice.GetLayout("PortraitFrameTemplate"))
 
 TransmogFrameTitleText:SetParent(chrome)
 TransmogFrameTitleText:SetDrawLayer("OVERLAY")
@@ -143,7 +152,7 @@ for i = 1, #regions do
 end
 
 -- Docked in the Journal's Appearances tab (ui/journal_tab.lua) the Journal's own DragonUI window
--- is the frame: the metal, the rock and streaks behind it, the portrait, title and close button
+-- is the frame: the metal, the rock and streaks behind it, the title and close button
 -- all go, and the model window and appearance pane sit straight on the Journal's rock, as
 -- retail's Appearances tab does in its Collections window. Returns true when it went bare.
 local windowParts = { rock, chrome, TransmogFrameCloseButton }

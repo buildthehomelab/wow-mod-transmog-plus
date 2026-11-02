@@ -67,7 +67,6 @@ Transmog:SetScript("OnEvent", function()
 					if Transmog.delayedLoad:IsVisible() then
 						twfprint("Transmog is still loading, try again in a few seconds.")
 					else
-						Transmog.openedAnywhere = true
 						TransmogFrame:Show()
 					end
 					return

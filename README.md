@@ -86,7 +86,7 @@ it collects appearances the retail way (see below) and ships a migration from mo
   pets. It opens there the way `/transmog` does, so it needs `Transmog.OpenAnywhere = 1`; with it
   off the tab says to visit a Transmogrifier.
 - With [DragonUI](https://github.com/buildthehomelab/wow-addon-DragonUI) installed, the transmog
-  window takes DragonUI's retail look (metal portrait frame, marble panes, red buttons) instead of
+  window takes DragonUI's retail look (bronze frame, marble panes, red buttons) instead of
   its own art.
 - Preview tiles frame the part of the body the slot covers; weapon tiles zoom on the hand
   holding the weapon. If a race frames badly, `/transmog camera <depth> <side> <height>
