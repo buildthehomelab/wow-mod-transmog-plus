@@ -12,9 +12,10 @@ if not (Journal and Journal.RegisterTab and (Journal.API or 0) >= 1 and Transmog
 -- Journal it is scaled up to fill it. It drops its own frame there (Transmog.SetDockedChrome in
 -- ui/dragonui_skin.lua, or ui/stock_skin.lua without DragonUI) and only its content counts: from the tabs
 -- (47 down) to the pane's bottom edge (8 up), and from the model window's left edge (20) to the
--- Collected bar's right end (590 + 150), which reaches past the pane's.
+-- pane's right edge (24 in, 12 in the stock look).
 local FRAME_W, FRAME_H = 750, 506
-local BARE_LEFT, BARE_TOP, BARE_RIGHT, BARE_BOTTOM = 20, 47, 740, 498
+local BARE_LEFT, BARE_TOP, BARE_RIGHT, BARE_BOTTOM = 20, 47, 726, 498
+local BARE_RIGHT_STOCK = 738
 -- Room left between the content and the Journal's edges, in the Journal's units.
 local FIT_MARGIN = 14
 local MAX_SCALE = 1.6
@@ -36,7 +37,9 @@ end
 -- SetPoint offsets are in the window's own (scaled) units, so the centring offset is too.
 local function fit(panel)
     local left, top, right, bottom = 0, 0, FRAME_W, FRAME_H
-    if bare then left, top, right, bottom = BARE_LEFT, BARE_TOP, BARE_RIGHT, BARE_BOTTOM end
+    if bare then
+        left, top, right, bottom = BARE_LEFT, BARE_TOP, Transmog.stockLook and BARE_RIGHT_STOCK or BARE_RIGHT, BARE_BOTTOM
+    end
     local w, h = panel:GetWidth() or 0, panel:GetHeight() or 0
     local scale = 1
     if w > 0 and h > 0 then

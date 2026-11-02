@@ -181,8 +181,8 @@ Transmog.stockLook = true
 
 local frame = TransmogFrame
 
--- The model window and the appearance pane, as the DragonUI skin cuts them, kept clear of the
--- dialog border and the Apply button.
+-- The model window and the appearance pane, kept clear of the dialog border and the Apply button.
+-- The model window keeps its XML top here: the Outfits row stays above it, under the header plate.
 local MODEL_LEFT, MODEL_TOP, MODEL_RIGHT, MODEL_BOTTOM = 20, -111, 241, -468
 local PANE_LEFT, PANE_TOP, PANE_RIGHT, PANE_BOTTOM = 246, -79, -12, 12
 
@@ -197,7 +197,6 @@ frame:SetBackdrop(DIALOG)
 
 TransmogFrameBackground1:Hide()
 TransmogFrameBackground2:Hide()
-TransmogFramePortrait:Hide()
 TransmogFrameRaceBackground:Hide()
 -- Shown and hidden all over the addon; it just draws nothing here.
 TransmogFrameSplash:SetAlpha(0)
@@ -222,7 +221,6 @@ TransmogFrameCloseButton:ClearAllPoints()
 TransmogFrameCloseButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -3, -3)
 
 -- Clear of the dialog border.
-TransmogFrameCollected:SetWidth(140)
 TransmogFrameApplyButton:ClearAllPoints()
 TransmogFrameApplyButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 120, 13)
 

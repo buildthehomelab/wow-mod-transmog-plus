@@ -17,7 +17,7 @@ function Transmog_OnLoad()
     TransmogFrameNoTransmogs:SetText(Transmog.NO_TRANSMOGS_TEXT)
 
     -- The bar's XML size loses to its template's, which ran it past the window's right edge.
-    TransmogFrameCollected:SetWidth(150)
+    TransmogFrameCollected:SetWidth(140)
 
     if not transmogOutfits then
         transmogOutfits = {}
@@ -75,7 +75,6 @@ function TransmogFrame_OnShow()
 	twfdebug("TransmogFrame_OnShow start")
 
     Transmog_switchTab('items')
-    SetPortraitTexture(TransmogFramePortrait, Transmog.openedAnywhere and "player" or "target");
 
     Transmog:Reset()
 
@@ -127,7 +126,6 @@ function Transmog_OnHide()
     HideUIPanel(GossipFrame)
     GossipFrame:Hide()
 	twfdebug("Transmog_OnHide")
-    Transmog.openedAnywhere = nil
     for slot, enchant in pairs(Transmog.illusionStatusFromServer) do
         Transmog.illusionStatusToServer[slot] = enchant
     end

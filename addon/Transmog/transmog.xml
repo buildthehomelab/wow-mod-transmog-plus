@@ -553,18 +553,6 @@
                 </Texture>
             </Layer>
             <Layer level="ARTWORK">
-                <Texture name="$parentPortrait">
-                    <Size>
-                        <AbsDimension x="60" y="60"/>
-                    </Size>
-                    <Anchors>
-                        <Anchor point="TOPLEFT">
-                            <Offset>
-                                <AbsDimension x="7" y="-6"/>
-                            </Offset>
-                        </Anchor>
-                    </Anchors>
-                </Texture>
                 <Texture name="$parentSplash" file="Interface\AddOns\Transmog\assets\splash">
                     <Size>
                         <AbsDimension x="512" y="512"/>
@@ -989,15 +977,17 @@
                     </OnClick>
                 </Scripts>
             </Button>
+            <!-- In the filter row: its border, 5 past each end, is level with the last column of tiles
+                 (263 + 4 * 90 + 86) and as far from the Sort button as Sort is from Type. -->
             <StatusBar name="$parentCollected" inherits="TransmogCollectedStatusBarTemplate" minValue="0" maxValue="1"
                        defaultValue="1" id="1">
                 <Size>
-                    <AbsDimension x="150" y="15"/>
+                    <AbsDimension x="140" y="15"/>
                 </Size>
                 <Anchors>
                     <Anchor point="TOPLEFT">
                         <Offset>
-                            <AbsDimension x="590" y="-49"/>
+                            <AbsDimension x="564" y="-84"/>
                         </Offset>
                     </Anchor>
                 </Anchors>

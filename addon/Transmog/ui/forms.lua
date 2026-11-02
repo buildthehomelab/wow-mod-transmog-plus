@@ -202,9 +202,6 @@ function Transmog:OnFormsLoaded()
     self.serverSupportsForms = true
     if TransmogFrameFormsButton then
         TransmogFrameFormsButton:Show()
-        -- The Forms tab takes the Collected bar's place in the tab row: move the bar under it.
-        TransmogFrameCollected:ClearAllPoints()
-        TransmogFrameCollected:SetPoint("TOPLEFT", TransmogFrame, "TOPLEFT", 590, -84)
         self:SetFormsTabActive(self.tab == 'forms')
     end
     if self.tab == 'forms' and TransmogFrame:IsVisible() then
