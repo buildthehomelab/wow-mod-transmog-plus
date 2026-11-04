@@ -174,10 +174,14 @@ function Transmog:ItemSubclassStrToNum(itemSubclassStr)
 			itemSubclass = 13
 		elseif itemSubclassStr == "Daggers" or itemSubclassStr == "Dagas" then
 			itemSubclass = 15
+		elseif itemSubclassStr == "Thrown" or itemSubclassStr == "Arrojadizas" then
+			itemSubclass = 16
 		elseif itemSubclassStr == "Crossbows" or itemSubclassStr == "Ballestas" then
 			itemSubclass = 18
 		elseif itemSubclassStr == "Wands" or itemSubclassStr == "Varitas" then
 			itemSubclass = 19
+		elseif itemSubclassStr == "Fishing Poles" or itemSubclassStr == "Cañas de pescar" then
+			itemSubclass = 20
 		elseif itemSubclassStr == "Cloth" or itemSubclassStr == "Tela" then
 			itemSubclass = 1
 		elseif itemSubclassStr == "Leather" or itemSubclassStr == "Cuero" then
